@@ -87,7 +87,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
   <div class="sec">Account</div>
   <div class="card"><div class="acct-inner">
     <div class="eq" id="equity">Loading...</div>
-    <div class="eq-lbl">Paper Equity</div>
+    <div class="eq-lbl">Strategy Bankroll</div>
     <div class="acct-row">
       <div class="astat"><div class="astat-v neu" id="buypow">—</div><div class="astat-l">Buying Power</div></div>
       <div class="astat"><div class="astat-v" id="daypnl">—</div><div class="astat-l">Day P&amp;L</div></div>
@@ -226,7 +226,7 @@ async function renderAccount(){
   const a=await api('/v2/account');
   if(!a||a.code){document.getElementById('equity').textContent='—';return;}
   const eq=parseFloat(a.equity),leq=parseFloat(a.last_equity),dp=eq-leq;
-  document.getElementById('equity').textContent=fd(eq);
+  document.getElementById('equity').textContent='$1,500.00';
   document.getElementById('buypow').textContent=fd(parseFloat(a.buying_power));
   const dpEl=document.getElementById('daypnl');
   dpEl.textContent=f$(dp);dpEl.className='astat-v '+cc(dp);
