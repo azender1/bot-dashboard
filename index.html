@@ -5,729 +5,317 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Bot Dashboard</title>
 <style>
-  :root {
-    --bg:       #0a0e14;
-    --surface:  #111822;
-    --border:   #1e2d3d;
-    --green:    #00e5a0;
-    --red:      #ff4d6a;
-    --yellow:   #f0b429;
-    --blue:     #4da6ff;
-    --muted:    #4a5568;
-    --text:     #e2e8f0;
-    --subtext:  #8899a6;
-    --font-mono: 'SF Mono', 'Fira Code', monospace;
-    --font:      -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--font);
-    min-height: 100vh;
-    padding: 0 0 40px;
-  }
-
-  /* ── Header ── */
-  .header {
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    padding: 14px 16px 12px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-  }
-  .header-title {
-    font-size: 15px;
-    font-weight: 700;
-    letter-spacing: .04em;
-    color: var(--green);
-  }
-  .header-time {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    color: var(--subtext);
-  }
-  .market-badge {
-    font-size: 10px;
-    font-weight: 700;
-    padding: 3px 8px;
-    border-radius: 4px;
-    letter-spacing: .06em;
-  }
-  .market-open  { background: rgba(0,229,160,.15); color: var(--green); }
-  .market-closed{ background: rgba(255,77,106,.12); color: var(--red);   }
-
-  /* ── Section label ── */
-  .section-label {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: .1em;
-    color: var(--muted);
-    text-transform: uppercase;
-    padding: 18px 16px 6px;
-  }
-
-  /* ── Account card ── */
-  .account-card {
-    margin: 0 12px 4px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 16px;
-  }
-  .account-equity {
-    font-size: 28px;
-    font-weight: 700;
-    font-family: var(--font-mono);
-    color: var(--text);
-    letter-spacing: -.01em;
-  }
-  .account-label {
-    font-size: 11px;
-    color: var(--subtext);
-    margin-top: 2px;
-  }
-  .account-row {
-    display: flex;
-    gap: 16px;
-    margin-top: 12px;
-  }
-  .account-stat {
-    flex: 1;
-  }
-  .account-stat-val {
-    font-family: var(--font-mono);
-    font-size: 14px;
-    font-weight: 600;
-  }
-  .account-stat-lbl {
-    font-size: 10px;
-    color: var(--subtext);
-    margin-top: 2px;
-  }
-  .pos { color: var(--green); }
-  .neg { color: var(--red);   }
-  .neu { color: var(--text);  }
-
-  /* ── Bot cards ── */
-  .bot-card {
-    margin: 0 12px 10px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    overflow: hidden;
-  }
-  .bot-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 14px 10px;
-    border-bottom: 1px solid var(--border);
-  }
-  .bot-name {
-    font-size: 13px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    gap: 7px;
-  }
-  .bot-dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-  .dot-active  { background: var(--green); box-shadow: 0 0 6px var(--green); }
-  .dot-waiting { background: var(--yellow); }
-  .dot-idle    { background: var(--muted);  }
-
-  .bot-pnl {
-    font-family: var(--font-mono);
-    font-size: 16px;
-    font-weight: 700;
-  }
-
-  .bot-body {
-    padding: 10px 14px 12px;
-  }
-  .bot-stats {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 10px;
-  }
-  .stat-box {
-    background: rgba(255,255,255,.03);
-    border-radius: 6px;
-    padding: 8px 10px;
-  }
-  .stat-val {
-    font-family: var(--font-mono);
-    font-size: 14px;
-    font-weight: 600;
-  }
-  .stat-lbl {
-    font-size: 9px;
-    color: var(--subtext);
-    margin-top: 2px;
-    text-transform: uppercase;
-    letter-spacing: .06em;
-  }
-
-  /* ── Position strip ── */
-  .position-strip {
-    background: rgba(77,166,255,.07);
-    border: 1px solid rgba(77,166,255,.2);
-    border-radius: 6px;
-    padding: 8px 10px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-  }
-  .position-left {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-  .position-symbol {
-    font-family: var(--font-mono);
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--blue);
-  }
-  .position-detail {
-    font-size: 10px;
-    color: var(--subtext);
-  }
-  .position-pnl {
-    font-family: var(--font-mono);
-    font-size: 15px;
-    font-weight: 700;
-  }
-
-  /* ── Last event ── */
-  .last-event {
-    font-size: 11px;
-    color: var(--subtext);
-    font-family: var(--font-mono);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    padding-top: 4px;
-    border-top: 1px solid var(--border);
-  }
-  .event-time {
-    color: var(--muted);
-    margin-right: 6px;
-  }
-
-  /* ── Positions section ── */
-  .position-card {
-    margin: 0 12px 10px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    overflow: hidden;
-  }
-  .position-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 11px 14px;
-    border-bottom: 1px solid rgba(30,45,61,.6);
-  }
-  .position-row:last-child { border-bottom: none; }
-  .pos-sym {
-    font-family: var(--font-mono);
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--text);
-  }
-  .pos-qty {
-    font-size: 11px;
-    color: var(--subtext);
-    margin-top: 2px;
-  }
-  .pos-val {
-    text-align: right;
-  }
-  .pos-mkt {
-    font-family: var(--font-mono);
-    font-size: 13px;
-    font-weight: 600;
-  }
-  .pos-unreal {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    margin-top: 2px;
-  }
-
-  /* ── Error / empty ── */
-  .empty {
-    padding: 20px 16px;
-    text-align: center;
-    color: var(--muted);
-    font-size: 12px;
-  }
-
-  /* ── Refresh footer ── */
-  .footer {
-    text-align: center;
-    padding: 20px 16px 0;
-    font-size: 11px;
-    color: var(--muted);
-  }
-  .refresh-btn {
-    display: inline-block;
-    margin-top: 8px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 8px 20px;
-    color: var(--text);
-    font-size: 12px;
-    cursor: pointer;
-    font-family: var(--font);
-  }
-  .refresh-btn:active { opacity: .7; }
-
-  /* ── Spinner ── */
-  .spin {
-    display: inline-block;
-    width: 10px; height: 10px;
-    border: 2px solid var(--border);
-    border-top-color: var(--green);
-    border-radius: 50%;
-    animation: spin .8s linear infinite;
-    margin-right: 6px;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
+:root{--bg:#0a0e14;--surface:#111822;--border:#1e2d3d;--green:#00e5a0;--red:#ff4d6a;--yellow:#f0b429;--blue:#4da6ff;--muted:#4a5568;--text:#e2e8f0;--subtext:#8899a6;--mono:'SF Mono','Fira Code',monospace;--sans:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;padding-bottom:40px;}
+#setup{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;}
+.setup-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;width:100%;max-width:380px;}
+.setup-title{font-size:20px;font-weight:700;color:var(--green);margin-bottom:4px;}
+.setup-sub{font-size:12px;color:var(--subtext);margin-bottom:20px;line-height:1.5;}
+.setup-label{font-size:11px;color:var(--subtext);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;margin-top:14px;}
+.setup-input{display:block;width:100%;background:#0d1520;border:1px solid var(--border);border-radius:8px;padding:12px 14px;color:var(--text);font-family:var(--mono);font-size:14px;outline:none;-webkit-appearance:none;}
+.setup-input:focus{border-color:var(--green);}
+.setup-btn{display:block;width:100%;background:var(--green);color:#000;border:none;border-radius:8px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;margin-top:20px;-webkit-appearance:none;-webkit-tap-highlight-color:transparent;}
+.setup-note{font-size:10px;color:var(--muted);margin-top:12px;text-align:center;line-height:1.5;}
+.err{color:var(--red);font-size:12px;margin-top:10px;min-height:18px;text-align:center;}
+#dash{display:none;}
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10;}
+.header-title{font-size:14px;font-weight:700;color:var(--green);}
+.clock{font-family:var(--mono);font-size:11px;color:var(--subtext);}
+.badge{font-size:10px;font-weight:700;padding:3px 7px;border-radius:4px;letter-spacing:.06em;}
+.badge-open{background:rgba(0,229,160,.15);color:var(--green);}
+.badge-closed{background:rgba(255,77,106,.12);color:var(--red);}
+.sec{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;padding:16px 16px 6px;}
+.card{margin:0 12px 10px;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.acct-inner{padding:14px 16px;}
+.eq{font-size:26px;font-weight:700;font-family:var(--mono);}
+.eq-lbl{font-size:11px;color:var(--subtext);margin-top:2px;}
+.acct-row{display:flex;gap:12px;margin-top:12px;}
+.astat{flex:1;}
+.astat-v{font-family:var(--mono);font-size:13px;font-weight:600;}
+.astat-l{font-size:10px;color:var(--subtext);margin-top:2px;}
+.bot-hdr{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid var(--border);}
+.bot-name{font-size:13px;font-weight:700;display:flex;align-items:center;gap:7px;}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.dot-on{background:var(--green);box-shadow:0 0 6px var(--green);}
+.dot-wait{background:var(--yellow);}
+.dot-off{background:var(--muted);}
+.bot-pnl{font-family:var(--mono);font-size:16px;font-weight:700;}
+.bot-body{padding:10px 14px 12px;}
+.bot-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;}
+.sbox{background:rgba(255,255,255,.03);border-radius:6px;padding:8px 10px;}
+.sv{font-family:var(--mono);font-size:13px;font-weight:600;}
+.sl{font-size:9px;color:var(--subtext);margin-top:2px;text-transform:uppercase;letter-spacing:.06em;}
+.last{font-size:11px;color:var(--subtext);font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-top:8px;border-top:1px solid var(--border);}
+.et{color:var(--muted);margin-right:6px;}
+.prow{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;border-bottom:1px solid rgba(30,45,61,.6);}
+.prow:last-child{border-bottom:none;}
+.psym{font-family:var(--mono);font-size:14px;font-weight:700;}
+.pqty{font-size:11px;color:var(--subtext);margin-top:2px;}
+.pmkt{font-family:var(--mono);font-size:13px;font-weight:600;text-align:right;}
+.punr{font-family:var(--mono);font-size:11px;margin-top:2px;text-align:right;}
+.empty-msg{padding:18px;text-align:center;color:var(--muted);font-size:12px;}
+.pos{color:var(--green);}.neg{color:var(--red);}.neu{color:var(--text);}
+.footer{text-align:center;padding:20px 16px 0;font-size:11px;color:var(--muted);}
+.btn{display:inline-block;margin-top:8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 20px;color:var(--text);font-size:12px;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.btn-sm{display:inline-block;margin-top:8px;margin-left:8px;background:transparent;border:1px solid var(--border);border-radius:6px;padding:8px 14px;color:var(--muted);font-size:11px;cursor:pointer;}
+.last-ref{margin-top:8px;font-size:10px;}
 </style>
 </head>
 <body>
 
-<div class="header">
-  <div>
-    <div class="header-title">⚡ BOT DASHBOARD</div>
-    <div class="header-time" id="clock">--:--:-- ET</div>
-  </div>
-  <span class="market-badge" id="market-badge">CHECKING</span>
-</div>
-
-<!-- Account -->
-<div class="section-label">Account</div>
-<div class="account-card" id="account-card">
-  <div class="account-equity" id="equity">Loading...</div>
-  <div class="account-label">Paper Equity</div>
-  <div class="account-row">
-    <div class="account-stat">
-      <div class="account-stat-val neu" id="buying-power">—</div>
-      <div class="account-stat-lbl">Buying Power</div>
-    </div>
-    <div class="account-stat">
-      <div class="account-stat-val" id="day-pnl">—</div>
-      <div class="account-stat-lbl">Day P&amp;L</div>
-    </div>
-    <div class="account-stat">
-      <div class="account-stat-val neu" id="position-count">—</div>
-      <div class="account-stat-lbl">Positions</div>
-    </div>
+<div id="setup">
+  <div class="setup-box">
+    <div class="setup-title">⚡ Bot Dashboard</div>
+    <div class="setup-sub">Enter your Alpaca paper trading credentials. Saved in this browser only — never sent anywhere except Alpaca.</div>
+    <div class="setup-label">API Key ID</div>
+    <input class="setup-input" id="inp-key" type="text" placeholder="PKXXXXXXXXXXXXXXXXXX" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
+    <div class="setup-label">API Secret Key</div>
+    <input class="setup-input" id="inp-secret" type="password" placeholder="Your secret key" autocomplete="off" autocorrect="off" autocapitalize="none">
+    <div class="err" id="setup-err"></div>
+    <button class="setup-btn" id="connect-btn" type="button">Connect →</button>
+    <div class="setup-note">Keys stored locally in browser storage only.</div>
   </div>
 </div>
 
-<!-- V23 Bot -->
-<div class="section-label">V23 — Momentum Bot</div>
-<div class="bot-card" id="v23-card">
-  <div class="bot-header">
-    <div class="bot-name">
-      <span class="bot-dot dot-waiting" id="v23-dot"></span>
-      <span id="v23-status">Checking...</span>
-    </div>
-    <div class="bot-pnl" id="v23-pnl">—</div>
+<div id="dash">
+  <div class="header">
+    <div><div class="header-title">⚡ BOT DASHBOARD</div><div class="clock" id="clock">--:--:-- ET</div></div>
+    <span class="badge badge-closed" id="badge">--</span>
   </div>
-  <div class="bot-body">
-    <div class="bot-stats">
-      <div class="stat-box">
-        <div class="stat-val" id="v23-trades">—</div>
-        <div class="stat-lbl">Trades</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-val" id="v23-wins">—</div>
-        <div class="stat-lbl">Wins</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-val" id="v23-score">—</div>
-        <div class="stat-lbl">Last Score</div>
-      </div>
-    </div>
-    <div class="last-event" id="v23-last">
-      <span class="event-time">--:--</span>Waiting for data...
-    </div>
-  </div>
-</div>
 
-<!-- ORB Bot -->
-<div class="section-label">ORB — Opening Range Breakout</div>
-<div class="bot-card" id="orb-card">
-  <div class="bot-header">
-    <div class="bot-name">
-      <span class="bot-dot dot-waiting" id="orb-dot"></span>
-      <span id="orb-status">Checking...</span>
+  <div class="sec">Account</div>
+  <div class="card"><div class="acct-inner">
+    <div class="eq" id="equity">Loading...</div>
+    <div class="eq-lbl">Paper Equity</div>
+    <div class="acct-row">
+      <div class="astat"><div class="astat-v neu" id="buypow">—</div><div class="astat-l">Buying Power</div></div>
+      <div class="astat"><div class="astat-v" id="daypnl">—</div><div class="astat-l">Day P&amp;L</div></div>
+      <div class="astat"><div class="astat-v neu" id="posct">—</div><div class="astat-l">Positions</div></div>
     </div>
-    <div class="bot-pnl" id="orb-pnl">—</div>
-  </div>
-  <div class="bot-body">
-    <div class="bot-stats">
-      <div class="stat-box">
-        <div class="stat-val" id="orb-range">—</div>
-        <div class="stat-lbl">Range</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-val" id="orb-entry">—</div>
-        <div class="stat-lbl">Entry</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-val" id="orb-target">—</div>
-        <div class="stat-lbl">Target</div>
-      </div>
+  </div></div>
+
+  <div class="sec">V23 — Momentum Bot</div>
+  <div class="card">
+    <div class="bot-hdr">
+      <div class="bot-name"><span class="dot dot-wait" id="v23-dot"></span><span id="v23-status">Checking...</span></div>
+      <div class="bot-pnl neu" id="v23-pnl">—</div>
     </div>
-    <div class="last-event" id="orb-last">
-      <span class="event-time">--:--</span>Waiting for data...
+    <div class="bot-body">
+      <div class="bot-stats">
+        <div class="sbox"><div class="sv" id="v23-trades">—</div><div class="sl">Trades</div></div>
+        <div class="sbox"><div class="sv" id="v23-wins">—</div><div class="sl">Wins</div></div>
+        <div class="sbox"><div class="sv neu" id="v23-unreal">—</div><div class="sl">Open P&amp;L</div></div>
+      </div>
+      <div class="last" id="v23-last"><span class="et">—</span>No trades yet</div>
     </div>
   </div>
-</div>
 
-<!-- Live Positions -->
-<div class="section-label">Live Positions</div>
-<div class="position-card" id="positions-card">
-  <div class="empty" id="positions-empty">No open positions</div>
-</div>
+  <div class="sec">ORB — Opening Range Breakout</div>
+  <div class="card">
+    <div class="bot-hdr">
+      <div class="bot-name"><span class="dot dot-wait" id="orb-dot"></span><span id="orb-status">Checking...</span></div>
+      <div class="bot-pnl neu" id="orb-pnl">—</div>
+    </div>
+    <div class="bot-body">
+      <div class="bot-stats">
+        <div class="sbox"><div class="sv" id="orb-range">—</div><div class="sl">Range</div></div>
+        <div class="sbox"><div class="sv" id="orb-entry">—</div><div class="sl">Entry</div></div>
+        <div class="sbox"><div class="sv neu" id="orb-unreal">—</div><div class="sl">Open P&amp;L</div></div>
+      </div>
+      <div class="last" id="orb-last"><span class="et">—</span>Waiting for market open</div>
+    </div>
+  </div>
 
-<div class="footer">
-  Auto-refreshes every 30s
-  <br>
-  <button class="refresh-btn" onclick="loadAll()">↻ Refresh Now</button>
-  <div style="margin-top:8px;font-size:10px" id="last-refresh">—</div>
+  <div class="sec">Live Positions</div>
+  <div class="card" id="pos-card"><div class="empty-msg">No open positions</div></div>
+
+  <div class="footer">
+    Auto-refreshes every 30s
+    <br>
+    <button class="btn" type="button" onclick="loadAll()">↻ Refresh Now</button>
+    <button class="btn-sm" type="button" onclick="resetKeys()">Reset Keys</button>
+    <div class="last-ref" id="last-ref">—</div>
+  </div>
 </div>
 
 <script>
-const KEY    = localStorage.getItem('alpaca_key')    || '';
-const SECRET = localStorage.getItem('alpaca_secret') || '';
-const BASE   = 'https://paper-api.alpaca.markets';
+const BASE='https://paper-api.alpaca.markets';
+let KEY='',SECRET='';
 
-// Prompt for keys if not stored
-if (!KEY || !SECRET) {
-  const k = prompt('Enter your Alpaca paper API key (stored locally in browser only):');
-  const s = prompt('Enter your Alpaca paper API secret:');
-  if (k && s) {
-    localStorage.setItem('alpaca_key', k);
-    localStorage.setItem('alpaca_secret', s);
-    location.reload();
+function getH(){return{'APCA-API-KEY-ID':KEY,'APCA-API-SECRET-KEY':SECRET};}
+
+// Wire button with addEventListener — more reliable on iOS than onclick
+document.getElementById('connect-btn').addEventListener('touchend',function(e){
+  e.preventDefault(); saveKeys();
+});
+document.getElementById('connect-btn').addEventListener('click',function(e){
+  e.preventDefault(); saveKeys();
+});
+
+function saveKeys(){
+  const k=(document.getElementById('inp-key').value||'').trim();
+  const s=(document.getElementById('inp-secret').value||'').trim();
+  const errEl=document.getElementById('setup-err');
+  if(!k){errEl.textContent='Enter your API Key ID.';return;}
+  if(!s){errEl.textContent='Enter your API Secret Key.';return;}
+  errEl.textContent='Connecting...';
+  // Test the keys first
+  fetch(BASE+'/v2/account',{headers:{'APCA-API-KEY-ID':k,'APCA-API-SECRET-KEY':s}})
+    .then(r=>r.json())
+    .then(data=>{
+      if(data.code||data.message){
+        errEl.textContent='Auth failed: '+(data.message||'check your keys');
+        return;
+      }
+      localStorage.setItem('ak',k);
+      localStorage.setItem('as',s);
+      KEY=k; SECRET=s;
+      document.getElementById('setup').style.display='none';
+      document.getElementById('dash').style.display='block';
+      loadAll();
+    })
+    .catch(e=>{errEl.textContent='Connection error: '+e.message;});
+}
+
+function resetKeys(){
+  localStorage.removeItem('ak');localStorage.removeItem('as');
+  location.reload();
+}
+
+function init(){
+  KEY=localStorage.getItem('ak')||'PKOWDEGWSDAOR7X4HJFGMXRYLB';
+  SECRET=localStorage.getItem('as')||'3PCvTfrEWK5w13Hzq8jErA5ftLAnkHhYsrZjPJiTLrpr';
+  if(KEY&&SECRET){
+    document.getElementById('setup').style.display='none';
+    document.getElementById('dash').style.display='block';
+    loadAll();
   }
 }
 
-const HEADERS = {
-  'APCA-API-KEY-ID':     KEY,
-  'APCA-API-SECRET-KEY': SECRET,
-};
+function tick(){
+  const t=new Date().toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+  document.getElementById('clock').textContent=t+' ET';
+}
+setInterval(tick,1000);tick();
 
-// ── Clock ──────────────────────────────────────────────────────────────────
-function updateClock() {
-  const now = new Date();
-  const et  = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/New_York',
-    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
-  }).format(now);
-  document.getElementById('clock').textContent = et + ' ET';
+function mktOpen(){
+  const et=new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'}));
+  const d=et.getDay(),mins=et.getHours()*60+et.getMinutes();
+  return d>0&&d<6&&mins>=570&&mins<960;
 }
-setInterval(updateClock, 1000);
-updateClock();
+function updateBadge(){
+  const b=document.getElementById('badge');
+  if(mktOpen()){b.textContent='OPEN';b.className='badge badge-open';}
+  else{b.textContent='CLOSED';b.className='badge badge-closed';}
+}
+setInterval(updateBadge,30000);updateBadge();
 
-// ── Market status ──────────────────────────────────────────────────────────
-function isMarketOpen() {
-  const now = new Date();
-  const et  = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
-  const h   = et.getHours(), m = et.getMinutes(), d = et.getDay();
-  if (d === 0 || d === 6) return false;
-  const mins = h * 60 + m;
-  return mins >= 570 && mins < 960; // 9:30 to 16:00
-}
-function updateMarketBadge() {
-  const badge = document.getElementById('market-badge');
-  if (isMarketOpen()) {
-    badge.textContent = 'OPEN';
-    badge.className = 'market-badge market-open';
-  } else {
-    badge.textContent = 'CLOSED';
-    badge.className = 'market-badge market-closed';
-  }
-}
-setInterval(updateMarketBadge, 30000);
-updateMarketBadge();
+function f$(n){if(n==null||n===undefined)return'—';const v=parseFloat(n);return(v>=0?'+':'')+'\$'+Math.abs(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fd(n){return'\$'+parseFloat(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function cc(n){const v=parseFloat(n);return v>0?'pos':v<0?'neg':'neu';}
 
-// ── Format helpers ─────────────────────────────────────────────────────────
-function fmt$(n) {
-  if (n == null) return '—';
-  return (n >= 0 ? '+' : '') + '$' + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-function fmtDollar(n) {
-  return '$' + parseFloat(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-function colorClass(n) {
-  if (n > 0) return 'pos';
-  if (n < 0) return 'neg';
-  return 'neu';
-}
-
-// ── Alpaca API ─────────────────────────────────────────────────────────────
-async function fetchAccount() {
-  try {
-    const r = await fetch(BASE + '/v2/account', { headers: HEADERS });
+async function api(path){
+  try{
+    const r=await fetch(BASE+path,{headers:getH(),mode:'cors'});
     return await r.json();
-  } catch(e) { return null; }
+  }catch(e){console.error(path,e);return null;}
 }
 
-async function fetchPositions() {
-  try {
-    const r = await fetch(BASE + '/v2/positions', { headers: HEADERS });
-    return await r.json();
-  } catch(e) { return []; }
+async function renderAccount(){
+  const a=await api('/v2/account');
+  if(!a||a.code){document.getElementById('equity').textContent='—';return;}
+  const eq=parseFloat(a.equity),leq=parseFloat(a.last_equity),dp=eq-leq;
+  document.getElementById('equity').textContent=fd(eq);
+  document.getElementById('buypow').textContent=fd(parseFloat(a.buying_power));
+  const dpEl=document.getElementById('daypnl');
+  dpEl.textContent=f$(dp);dpEl.className='astat-v '+cc(dp);
 }
 
-async function fetchOrders() {
-  try {
-    const r = await fetch(BASE + '/v2/orders?status=all&limit=50', { headers: HEADERS });
-    return await r.json();
-  } catch(e) { return []; }
+async function renderPositions(){
+  const ps=await api('/v2/positions');
+  document.getElementById('posct').textContent=Array.isArray(ps)?ps.length:0;
+  const card=document.getElementById('pos-card');
+  if(!Array.isArray(ps)||!ps.length){card.innerHTML='<div class="empty-msg">No open positions</div>';return ps||[];}
+  card.innerHTML=ps.map(p=>{
+    const qty=parseFloat(p.qty),mv=parseFloat(p.market_value),unr=parseFloat(p.unrealized_pl),side=qty>0?'LONG':'SHORT';
+    return`<div class="prow"><div><div class="psym">${p.symbol}</div><div class="pqty">${Math.abs(qty)} · ${side} · avg \$${parseFloat(p.avg_entry_price).toFixed(2)}</div></div><div><div class="pmkt">${fd(mv)}</div><div class="punr ${cc(unr)}">${f$(unr)}</div></div></div>`;
+  }).join('');
+  return ps;
 }
 
-// ── Render account ─────────────────────────────────────────────────────────
-async function renderAccount() {
-  const acct = await fetchAccount();
-  if (!acct || acct.code) { 
-    document.getElementById('equity').textContent = 'Auth Error';
-    return;
-  }
-  const equity    = parseFloat(acct.equity);
-  const lastEq    = parseFloat(acct.last_equity);
-  const dayPnl    = equity - lastEq;
-  const buyPow    = parseFloat(acct.buying_power);
-
-  document.getElementById('equity').textContent = fmtDollar(equity);
-
-  const dpEl = document.getElementById('day-pnl');
-  dpEl.textContent  = fmt$(dayPnl);
-  dpEl.className    = 'account-stat-val ' + colorClass(dayPnl);
-
-  document.getElementById('buying-power').textContent = fmtDollar(buyPow);
+function todayFilled(orders){
+  const t=new Date().toISOString().slice(0,10);
+  return(orders||[]).filter(o=>o.filled_at&&o.filled_at.slice(0,10)===t&&o.status==='filled');
 }
 
-// ── Render positions ───────────────────────────────────────────────────────
-async function renderPositions() {
-  const positions = await fetchPositions();
-  const card      = document.getElementById('positions-card');
-  const empty     = document.getElementById('positions-empty');
-
-  document.getElementById('position-count').textContent = positions.length || '0';
-
-  if (!positions.length) {
-    card.innerHTML = '<div class="empty">No open positions</div>';
-    return;
-  }
-
-  card.innerHTML = '';
-  positions.forEach(p => {
-    const qty    = parseFloat(p.qty);
-    const mktVal = parseFloat(p.market_value);
-    const unreal = parseFloat(p.unrealized_pl);
-    const side   = qty > 0 ? 'LONG' : 'SHORT';
-
-    card.innerHTML += `
-      <div class="position-row">
-        <div>
-          <div class="pos-sym">${p.symbol}</div>
-          <div class="pos-qty">${Math.abs(qty)} shares · ${side} · avg $${parseFloat(p.avg_entry_price).toFixed(2)}</div>
-        </div>
-        <div class="pos-val">
-          <div class="pos-mkt">${fmtDollar(mktVal)}</div>
-          <div class="pos-unreal ${colorClass(unreal)}">${fmt$(unreal)}</div>
-        </div>
-      </div>`;
+async function renderV23(orders,positions){
+  const today=todayFilled(orders).filter(o=>o.symbol==='TQQQ'||o.symbol==='SQQQ');
+  const buys=today.filter(o=>o.side==='buy'),sells=today.filter(o=>o.side==='sell');
+  let pnl=0,wins=0,trades=0;
+  sells.forEach(s=>{
+    const b=buys.find(b=>b.symbol===s.symbol&&new Date(b.filled_at)<new Date(s.filled_at));
+    if(b){trades++;const p=(parseFloat(s.filled_avg_price)-parseFloat(b.filled_avg_price))*parseFloat(s.filled_qty);pnl+=p;if(p>0)wins++;}
   });
-}
-
-// ── Parse today's orders for bot stats ────────────────────────────────────
-function todayOrders(orders) {
-  const today = new Date().toISOString().slice(0, 10);
-  return orders.filter(o =>
-    o.filled_at && o.filled_at.slice(0, 10) === today &&
-    o.status === 'filled'
-  );
-}
-
-// ── Render V23 bot stats from orders ──────────────────────────────────────
-async function renderV23(orders) {
-  const today = todayOrders(orders);
-
-  // Pair buys and sells
-  const buys  = today.filter(o => o.side === 'buy'  && (o.symbol === 'TQQQ' || o.symbol === 'SQQQ'));
-  const sells = today.filter(o => o.side === 'sell' && (o.symbol === 'TQQQ' || o.symbol === 'SQQQ'));
-
-  // Simple P&L estimate from completed round trips
-  let totalPnl = 0, wins = 0, trades = 0;
-  sells.forEach(sell => {
-    const matchBuy = buys.find(b =>
-      b.symbol === sell.symbol &&
-      new Date(b.filled_at) < new Date(sell.filled_at)
-    );
-    if (matchBuy) {
-      trades++;
-      const qty = parseFloat(sell.filled_qty);
-      const pnl = (parseFloat(sell.filled_avg_price) - parseFloat(matchBuy.filled_avg_price)) * qty;
-      totalPnl += pnl;
-      if (pnl > 0) wins++;
-    }
-  });
-
-  const dot    = document.getElementById('v23-dot');
-  const status = document.getElementById('v23-status');
-  const pnlEl  = document.getElementById('v23-pnl');
-
-  // Check if there's a current open position
-  const positions = await fetchPositions();
-  const v23pos = positions.find(p => p.symbol === 'TQQQ' || p.symbol === 'SQQQ');
-
-  if (v23pos) {
-    dot.className    = 'bot-dot dot-active';
-    const sym = v23pos.symbol;
-    const side= parseFloat(v23pos.qty) > 0 ? 'LONG' : 'SHORT';
-    status.textContent = `${side} ${sym}`;
-    const unreal = parseFloat(v23pos.unrealized_pl);
-    const runPnl = totalPnl + unreal;
-    pnlEl.textContent = fmt$(runPnl);
-    pnlEl.className   = 'bot-pnl ' + colorClass(runPnl);
-  } else if (isMarketOpen()) {
-    dot.className    = 'bot-dot dot-waiting';
-    status.textContent = trades > 0 ? 'Watching' : 'Waiting for signal';
-    pnlEl.textContent = fmt$(totalPnl);
-    pnlEl.className   = 'bot-pnl ' + colorClass(totalPnl);
-  } else {
-    dot.className    = 'bot-dot dot-idle';
-    status.textContent = 'Market closed';
-    pnlEl.textContent = fmt$(totalPnl);
-    pnlEl.className   = 'bot-pnl ' + colorClass(totalPnl);
+  const pos=(positions||[]).find(p=>p.symbol==='TQQQ'||p.symbol==='SQQQ');
+  const dot=document.getElementById('v23-dot'),stat=document.getElementById('v23-status'),pnlEl=document.getElementById('v23-pnl'),unrEl=document.getElementById('v23-unreal');
+  if(pos){
+    dot.className='dot dot-on';
+    stat.textContent=(parseFloat(pos.qty)>0?'LONG ':'SHORT ')+pos.symbol;
+    const unr=parseFloat(pos.unrealized_pl);
+    unrEl.textContent=f$(unr);unrEl.className='sv '+cc(unr);
+    const tot=pnl+unr;pnlEl.textContent=f$(tot);pnlEl.className='bot-pnl '+cc(tot);
+  }else{
+    dot.className=mktOpen()?'dot dot-wait':'dot dot-off';
+    stat.textContent=mktOpen()?(trades>0?'Watching':'Waiting for signal'):'Market closed';
+    unrEl.textContent='—';unrEl.className='sv neu';
+    pnlEl.textContent=f$(pnl);pnlEl.className='bot-pnl '+cc(pnl);
   }
-
-  document.getElementById('v23-trades').textContent = trades || buys.length || '0';
-  document.getElementById('v23-wins').textContent   = trades > 0 ? `${wins}/${trades}` : '—';
-  document.getElementById('v23-score').textContent  = '—';
-
-  // Last event
-  const lastOrder = today.sort((a,b) => new Date(b.filled_at) - new Date(a.filled_at))[0];
-  if (lastOrder) {
-    const t = new Date(lastOrder.filled_at).toLocaleTimeString('en-US', {
-      timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', hour12: false
-    });
-    document.getElementById('v23-last').innerHTML =
-      `<span class="event-time">${t}</span>${lastOrder.side.toUpperCase()} ${lastOrder.filled_qty} ${lastOrder.symbol} @ $${parseFloat(lastOrder.filled_avg_price).toFixed(2)}`;
+  document.getElementById('v23-trades').textContent=trades||buys.length||'0';
+  document.getElementById('v23-wins').textContent=trades>0?wins+'/'+trades:'—';
+  const last=today.sort((a,b)=>new Date(b.filled_at)-new Date(a.filled_at))[0];
+  if(last){
+    const t=new Date(last.filled_at).toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit',hour12:false});
+    document.getElementById('v23-last').innerHTML=`<span class="et">${t}</span>${last.side.toUpperCase()} ${last.filled_qty} ${last.symbol} @ \$${parseFloat(last.filled_avg_price).toFixed(2)}`;
   }
 }
 
-// ── Render ORB bot stats ───────────────────────────────────────────────────
-async function renderORB(orders) {
-  const today  = todayOrders(orders);
-  const orbOrders = today.filter(o => o.symbol === 'TQQQ' || o.symbol === 'SQQQ');
-
-  const dot    = document.getElementById('orb-dot');
-  const status = document.getElementById('orb-status');
-
-  // ORB only takes one trade per day
-  const positions = await fetchPositions();
-  const orbPos = positions.find(p => p.symbol === 'TQQQ' || p.symbol === 'SQQQ');
-
-  const now = new Date();
-  const et  = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
-  const hm  = et.getHours() * 100 + et.getMinutes();
-
-  if (orbPos && orbOrders.length > 0) {
-    dot.className     = 'bot-dot dot-active';
-    const sym  = orbPos.symbol;
-    const side = parseFloat(orbPos.qty) > 0 ? 'LONG' : 'SHORT';
-    status.textContent = `${side} ${sym}`;
-    const unreal = parseFloat(orbPos.unrealized_pl);
-    const pnlEl  = document.getElementById('orb-pnl');
-    pnlEl.textContent = fmt$(unreal);
-    pnlEl.className   = 'bot-pnl ' + colorClass(unreal);
-    document.getElementById('orb-entry').textContent = '$' + parseFloat(orbPos.avg_entry_price).toFixed(2);
-  } else if (hm < 930) {
-    dot.className = 'bot-dot dot-waiting';
-    status.textContent = 'Pre-market';
-    document.getElementById('orb-pnl').textContent = '—';
-  } else if (hm >= 930 && hm < 945) {
-    dot.className = 'bot-dot dot-waiting';
-    status.textContent = 'Building range...';
-    document.getElementById('orb-pnl').textContent = '—';
-  } else if (orbOrders.length === 0 && isMarketOpen()) {
-    dot.className = 'bot-dot dot-waiting';
-    status.textContent = 'Watching for breakout';
-    document.getElementById('orb-pnl').textContent = '—';
-  } else if (orbOrders.length > 0) {
-    dot.className = 'bot-dot dot-idle';
-    status.textContent = 'Trade done for day';
-    // Calculate completed P&L
-    const buys  = orbOrders.filter(o => o.side === 'buy');
-    const sells = orbOrders.filter(o => o.side === 'sell');
-    let pnl = 0;
-    if (buys.length && sells.length) {
-      const qty  = parseFloat(sells[0].filled_qty);
-      pnl = (parseFloat(sells[0].filled_avg_price) - parseFloat(buys[0].filled_avg_price)) * qty;
-    }
-    const pnlEl = document.getElementById('orb-pnl');
-    pnlEl.textContent = fmt$(pnl);
-    pnlEl.className   = 'bot-pnl ' + colorClass(pnl);
-  } else {
-    dot.className = 'bot-dot dot-idle';
-    status.textContent = 'Market closed';
-    document.getElementById('orb-pnl').textContent = '—';
-  }
-
-  // Last ORB event
-  if (orbOrders.length) {
-    const last = orbOrders.sort((a,b) => new Date(b.filled_at) - new Date(a.filled_at))[0];
-    const t = new Date(last.filled_at).toLocaleTimeString('en-US', {
-      timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', hour12: false
-    });
-    document.getElementById('orb-last').innerHTML =
-      `<span class="event-time">${t}</span>${last.side.toUpperCase()} ${last.filled_qty} ${last.symbol} @ $${parseFloat(last.filled_avg_price).toFixed(2)}`;
-  } else if (hm >= 945 && isMarketOpen()) {
-    document.getElementById('orb-last').innerHTML =
-      `<span class="event-time">—</span>Watching QQQ for range breakout + VWAP confirm`;
-  }
+async function renderORB(orders,positions){
+  const today=todayFilled(orders).filter(o=>o.symbol==='TQQQ'||o.symbol==='SQQQ');
+  const pos=(positions||[]).find(p=>p.symbol==='TQQQ'||p.symbol==='SQQQ');
+  const et=new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'}));
+  const hm=et.getHours()*100+et.getMinutes();
+  const dot=document.getElementById('orb-dot'),stat=document.getElementById('orb-status'),pnlEl=document.getElementById('orb-pnl'),unrEl=document.getElementById('orb-unreal');
+  if(hm<930){dot.className='dot dot-wait';stat.textContent='Pre-market';pnlEl.textContent='—';pnlEl.className='bot-pnl neu';unrEl.textContent='—';}
+  else if(hm>=930&&hm<945){dot.className='dot dot-wait';stat.textContent='Building range...';pnlEl.textContent='—';pnlEl.className='bot-pnl neu';unrEl.textContent='—';}
+  else if(today.length===0&&mktOpen()){dot.className='dot dot-wait';stat.textContent='Watching for breakout';pnlEl.textContent='—';pnlEl.className='bot-pnl neu';unrEl.textContent='—';document.getElementById('orb-last').innerHTML='<span class="et">—</span>Watching QQQ for range break + VWAP confirm';}
+  else if(today.length>0&&pos){
+    dot.className='dot dot-on';stat.textContent=(parseFloat(pos.qty)>0?'LONG ':'SHORT ')+pos.symbol;
+    const unr=parseFloat(pos.unrealized_pl);unrEl.textContent=f$(unr);unrEl.className='sv '+cc(unr);
+    pnlEl.textContent=f$(unr);pnlEl.className='bot-pnl '+cc(unr);
+    document.getElementById('orb-entry').textContent='\$'+parseFloat(pos.avg_entry_price).toFixed(2);
+  }else if(today.length>0){
+    dot.className='dot dot-off';stat.textContent='Trade done for day';
+    const tb=today.filter(o=>o.side==='buy'),ts=today.filter(o=>o.side==='sell');
+    let cp=0;if(tb.length&&ts.length){cp=(parseFloat(ts[0].filled_avg_price)-parseFloat(tb[0].filled_avg_price))*parseFloat(ts[0].filled_qty);}
+    pnlEl.textContent=f$(cp);pnlEl.className='bot-pnl '+cc(cp);unrEl.textContent='—';
+  }else{dot.className='dot dot-off';stat.textContent='Market closed';pnlEl.textContent='—';pnlEl.className='bot-pnl neu';unrEl.textContent='—';}
 }
 
-// ── Load everything ────────────────────────────────────────────────────────
-async function loadAll() {
-  document.getElementById('last-refresh').textContent = 'Refreshing...';
+async function loadAll(){
+  if(!KEY||!SECRET)return;
+  document.getElementById('last-ref').textContent='Refreshing...';
+  const [orders,positions]=await Promise.all([api('/v2/orders?status=all&limit=100'),api('/v2/positions')]);
   await renderAccount();
-  const orders = await fetchOrders();
-  await renderV23(orders);
-  await renderORB(orders);
+  await renderV23(orders,positions);
+  await renderORB(orders,positions);
   await renderPositions();
-  const now = new Date().toLocaleTimeString('en-US', {
-    timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', second: '2-digit'
-  });
-  document.getElementById('last-refresh').textContent = 'Last updated: ' + now + ' ET';
+  const t=new Date().toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('last-ref').textContent='Updated '+t+' ET';
 }
 
-// Auto-refresh every 30s
-setInterval(loadAll, 30000);
-loadAll();
+setInterval(loadAll,30000);
+init();
 </script>
 </body>
 </html>
