@@ -274,7 +274,7 @@ function updateBadge(){
 }
 setInterval(updateBadge,30000);updateBadge();
 
-function f$(n){if(n==null||n===undefined)return'—';const v=parseFloat(n);return(v>=0?'+':'')+'\$'+Math.abs(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function f$(n){if(n==null||n===undefined)return'—';const v=parseFloat(n);const sign=v>0?'+':(v<0?'-':'');return sign+'\$'+Math.abs(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function fd(n){return'\$'+parseFloat(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function cc(n){const v=parseFloat(n);return v>0?'pos':v<0?'neg':'neu';}
 
