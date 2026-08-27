@@ -2,713 +2,380 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SafeAgent — Execution Simulator</title>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Bot Dashboard</title>
 <style>
-:root {
-  --bg: #0d0f12;
-  --surface: #141720;
-  --surface2: #1c2030;
-  --border: rgba(255,255,255,0.07);
-  --border2: rgba(255,255,255,0.13);
-  --text: #e8eaf0;
-  --muted: #6b7280;
-  --dim: #3d4455;
-  --accent: #4f8eff;
-  --accent-dim: rgba(79,142,255,0.12);
-  --green: #22c55e;
-  --green-dim: rgba(34,197,94,0.1);
-  --red: #ef4444;
-  --red-dim: rgba(239,68,68,0.1);
-  --amber: #f59e0b;
-  --mono: 'JetBrains Mono', monospace;
-  --sans: 'DM Sans', sans-serif;
-}
-
-* { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--sans);
-  min-height: 100vh;
-  padding: 0;
-  overflow-x: hidden;
-}
-
-.grid-bg {
-  position: fixed;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(79,142,255,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(79,142,255,0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.wrap {
-  position: relative;
-  z-index: 1;
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 48px 24px 64px;
-}
-
-.header {
-  margin-bottom: 48px;
-}
-
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--accent-dim);
-  border: 1px solid rgba(79,142,255,0.2);
-  color: var(--accent);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 4px 10px;
-  border-radius: 100px;
-  margin-bottom: 16px;
-}
-
-.badge-dot {
-  width: 6px; height: 6px;
-  background: var(--accent);
-  border-radius: 50%;
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0%,100%{ opacity:1; transform:scale(1); }
-  50%{ opacity:0.5; transform:scale(0.8); }
-}
-
-h1 {
-  font-size: clamp(28px, 4vw, 42px);
-  font-weight: 600;
-  color: var(--text);
-  line-height: 1.15;
-  letter-spacing: -0.02em;
-  margin-bottom: 12px;
-}
-
-h1 span { color: var(--accent); }
-
-.subtitle {
-  font-size: 15px;
-  color: var(--muted);
-  line-height: 1.6;
-  max-width: 520px;
-}
-
-.section-label {
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--dim);
-  margin-bottom: 10px;
-}
-
-/* SCENARIOS */
-.scenarios {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  margin-bottom: 28px;
-}
-
-@media(max-width:600px){ .scenarios{ grid-template-columns:repeat(2,1fr); } }
-
-.sc-btn {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 14px 14px;
-  cursor: pointer;
-  transition: all 0.15s;
-  text-align: left;
-  position: relative;
-  overflow: hidden;
-}
-
-.sc-btn:hover { border-color: var(--border2); background: var(--surface2); }
-
-.sc-btn.active {
-  border-color: var(--accent);
-  background: var(--accent-dim);
-}
-
-.sc-btn.active::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 2px;
-  background: var(--accent);
-  border-radius: 10px 10px 0 0;
-}
-
-.sc-icon {
-  font-size: 20px;
-  margin-bottom: 8px;
-  display: block;
-}
-
-.sc-name {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text);
-  display: block;
-  margin-bottom: 2px;
-}
-
-.sc-sub {
-  font-size: 11px;
-  color: var(--muted);
-  display: block;
-  line-height: 1.4;
-}
-
-.sc-btn.active .sc-name { color: var(--accent); }
-
-/* CONTROLS */
-.controls-row {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
-}
-
-.ctrl-group {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.ctrl-label {
-  font-size: 13px;
-  color: var(--muted);
-}
-
-input[type=range] {
-  -webkit-appearance: none;
-  width: 120px;
-  height: 4px;
-  background: var(--surface2);
-  border-radius: 2px;
-  outline: none;
-  border: 1px solid var(--border);
-}
-
-input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 16px; height: 16px;
-  background: var(--accent);
-  border-radius: 50%;
-  cursor: pointer;
-  border: 2px solid var(--bg);
-}
-
-.retry-num {
-  font-family: var(--mono);
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--accent);
-  min-width: 18px;
-}
-
-/* GUARD TOGGLE */
-.guard-toggle {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.toggle-track {
-  width: 48px; height: 26px;
-  background: var(--surface2);
-  border: 1px solid var(--border2);
-  border-radius: 100px;
-  cursor: pointer;
-  position: relative;
-  transition: background 0.2s, border-color 0.2s;
-}
-
-.toggle-track.on {
-  background: var(--green-dim);
-  border-color: var(--green);
-}
-
-.toggle-thumb {
-  width: 18px; height: 18px;
-  background: var(--muted);
-  border-radius: 50%;
-  position: absolute;
-  top: 3px; left: 3px;
-  transition: transform 0.2s, background 0.2s;
-}
-
-.toggle-track.on .toggle-thumb {
-  transform: translateX(22px);
-  background: var(--green);
-}
-
-.toggle-text {
-  font-size: 13px;
-  color: var(--muted);
-  min-width: 28px;
-}
-
-.toggle-track.on + .toggle-text { color: var(--green); }
-
-.run-btn {
-  margin-left: auto;
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 22px;
-  font-family: var(--sans);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: opacity 0.15s, transform 0.1s;
-  letter-spacing: -0.01em;
-}
-
-.run-btn:hover { opacity: 0.88; }
-.run-btn:active { transform: scale(0.97); }
-.run-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-/* PANELS */
-.panels {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-@media(max-width:580px){ .panels{ grid-template-columns:1fr; } }
-
-.panel {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface2);
-}
-
-.panel-header-dots {
-  display: flex;
-  gap: 5px;
-}
-
-.dot {
-  width: 10px; height: 10px;
-  border-radius: 50%;
-}
-
-.dot-r { background: #ff5f57; }
-.dot-y { background: #ffbd2e; }
-.dot-g { background: #28c840; }
-
-.panel-title {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--muted);
-  font-family: var(--mono);
-}
-
-.panel-status {
-  font-size: 11px;
-  font-family: var(--mono);
-  padding: 3px 8px;
-  border-radius: 4px;
-  font-weight: 500;
-}
-
-.panel-status.waiting { background: var(--surface); color: var(--dim); border: 1px solid var(--border); }
-.panel-status.bad { background: var(--red-dim); color: var(--red); border: 1px solid rgba(239,68,68,0.2); }
-.panel-status.good { background: var(--green-dim); color: var(--green); border: 1px solid rgba(34,197,94,0.2); }
-
-.log {
-  font-family: var(--mono);
-  font-size: 12px;
-  line-height: 1.8;
-  padding: 16px;
-  min-height: 220px;
-  color: var(--muted);
-}
-
-.log-dim { color: var(--dim); }
-.log-action { color: #93c5fd; }
-.log-warn { color: var(--amber); }
-.log-danger { color: var(--red); font-weight: 500; }
-.log-success { color: var(--green); font-weight: 500; }
-.log-info { color: var(--muted); }
-
-/* METRICS */
-.metrics {
-  display: grid;
-  grid-template-columns: repeat(3,1fr);
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-@media(max-width:480px){ .metrics{ grid-template-columns:1fr 1fr; } }
-
-.metric {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 14px 16px;
-}
-
-.metric-label {
-  font-size: 11px;
-  color: var(--muted);
-  margin-bottom: 6px;
-  line-height: 1.4;
-}
-
-.metric-val {
-  font-family: var(--mono);
-  font-size: 26px;
-  font-weight: 700;
-  color: var(--dim);
-}
-
-.metric-val.danger { color: var(--red); }
-.metric-val.success { color: var(--green); }
-
-/* INSIGHT */
-.insight {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--accent);
-  border-radius: 0 10px 10px 0;
-  padding: 14px 18px;
-  font-size: 13px;
-  color: var(--muted);
-  line-height: 1.7;
-  margin-bottom: 20px;
-}
-
-.insight strong { color: var(--text); font-weight: 500; }
-
-/* ASK BTN */
-.ask-row {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.ask-btn {
-  background: transparent;
-  border: 1px solid var(--border2);
-  border-radius: 8px;
-  padding: 9px 16px;
-  font-family: var(--sans);
-  font-size: 13px;
-  color: var(--muted);
-  cursor: pointer;
-  transition: all 0.15s;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.ask-btn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: var(--accent-dim);
-}
-
-.log-line { display: block; animation: fadeIn 0.15s ease; }
-@keyframes fadeIn { from{ opacity:0; transform:translateY(2px); } to{ opacity:1; transform:none; } }
+:root{--bg:#0a0e14;--surface:#111822;--border:#1e2d3d;--green:#00e5a0;--red:#ff4d6a;--yellow:#f0b429;--blue:#4da6ff;--muted:#4a5568;--text:#e2e8f0;--subtext:#8899a6;--mono:'SF Mono','Fira Code',monospace;--sans:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;padding-bottom:40px;}
+#setup{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;}
+.setup-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;width:100%;max-width:420px;}
+.setup-title{font-size:20px;font-weight:700;color:var(--green);margin-bottom:4px;}
+.setup-sub{font-size:12px;color:var(--subtext);margin-bottom:20px;line-height:1.5;}
+.setup-group{border-top:1px solid var(--border);padding-top:14px;margin-top:14px;}
+.setup-group:first-of-type{border-top:none;padding-top:0;margin-top:0;}
+.setup-group-title{font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;}
+.setup-label{font-size:11px;color:var(--subtext);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;margin-top:10px;}
+.setup-input{display:block;width:100%;background:#0d1520;border:1px solid var(--border);border-radius:8px;padding:12px 14px;color:var(--text);font-family:var(--mono);font-size:14px;outline:none;-webkit-appearance:none;}
+.setup-input:focus{border-color:var(--green);}
+.setup-btn{display:block;width:100%;background:var(--green);color:#000;border:none;border-radius:8px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;margin-top:20px;-webkit-appearance:none;-webkit-tap-highlight-color:transparent;}
+.setup-note{font-size:10px;color:var(--muted);margin-top:12px;text-align:center;line-height:1.5;}
+.err{color:var(--red);font-size:12px;margin-top:10px;min-height:18px;text-align:center;}
+#dash{display:none;}
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10;}
+.header-title{font-size:14px;font-weight:700;color:var(--green);}
+.clock{font-family:var(--mono);font-size:11px;color:var(--subtext);}
+.badge{font-size:10px;font-weight:700;padding:3px 7px;border-radius:4px;letter-spacing:.06em;}
+.badge-open{background:rgba(0,229,160,.15);color:var(--green);}
+.badge-closed{background:rgba(255,77,106,.12);color:var(--red);}
+.sec{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;padding:16px 16px 6px;}
+.card{margin:0 12px 10px;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.acct-inner{padding:14px 16px;}
+.eq{font-size:22px;font-weight:700;font-family:var(--mono);}
+.eq-lbl{font-size:11px;color:var(--subtext);margin-top:2px;}
+.acct-row{display:flex;gap:12px;margin-top:12px;}
+.astat{flex:1;}
+.astat-v{font-family:var(--mono);font-size:13px;font-weight:600;}
+.astat-l{font-size:10px;color:var(--subtext);margin-top:2px;}
+.bot-hdr{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid var(--border);}
+.bot-name{font-size:13px;font-weight:700;display:flex;align-items:center;gap:7px;}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.dot-on{background:var(--green);box-shadow:0 0 6px var(--green);}
+.dot-wait{background:var(--yellow);}
+.dot-off{background:var(--muted);}
+.bot-pnl{font-family:var(--mono);font-size:16px;font-weight:700;}
+.bot-body{padding:10px 14px 12px;}
+.bot-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;}
+.sbox{background:rgba(255,255,255,.03);border-radius:6px;padding:8px 10px;}
+.sv{font-family:var(--mono);font-size:13px;font-weight:600;}
+.sl{font-size:9px;color:var(--subtext);margin-top:2px;text-transform:uppercase;letter-spacing:.06em;}
+.last{font-size:11px;color:var(--subtext);font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-top:8px;border-top:1px solid var(--border);}
+.et{color:var(--muted);margin-right:6px;}
+.prow{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;border-bottom:1px solid rgba(30,45,61,.6);}
+.prow:last-child{border-bottom:none;}
+.psym{font-family:var(--mono);font-size:14px;font-weight:700;}
+.pqty{font-size:11px;color:var(--subtext);margin-top:2px;}
+.pmkt{font-family:var(--mono);font-size:13px;font-weight:600;text-align:right;}
+.punr{font-family:var(--mono);font-size:11px;margin-top:2px;text-align:right;}
+.empty-msg{padding:18px;text-align:center;color:var(--muted);font-size:12px;}
+.pos{color:var(--green);}.neg{color:var(--red);}.neu{color:var(--text);}
+.footer{text-align:center;padding:20px 16px 0;font-size:11px;color:var(--muted);}
+.btn{display:inline-block;margin-top:8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 20px;color:var(--text);font-size:12px;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.btn-sm{display:inline-block;margin-top:8px;margin-left:8px;background:transparent;border:1px solid var(--border);border-radius:6px;padding:8px 14px;color:var(--muted);font-size:11px;cursor:pointer;}
+.last-ref{margin-top:8px;font-size:10px;}
+.acct-tag{font-size:10px;color:var(--subtext);font-family:var(--mono);margin-top:2px;}
 </style>
 </head>
 <body>
-<div class="grid-bg"></div>
-<div class="wrap">
 
-  <div class="header">
-    <div class="badge"><span class="badge-dot"></span>Live simulator</div>
-    <h1>Execution simulator<br><span>SafeAgent</span></h1>
-    <p class="subtitle">Pick a scenario, set retry count, toggle the guard, then run. See exactly what breaks — and what the guard prevents.</p>
-  </div>
+<div id="setup">
+<div class="setup-box">
+<div class="setup-title">⚡ Bot Dashboard</div>
+<div class="setup-sub">Enter Alpaca paper trading credentials for each bot's account. Saved in this browser only — never sent anywhere except Alpaca.</div>
 
-  <div class="section-label">Scenario</div>
-  <div class="scenarios" id="scenarios">
-    <button class="sc-btn active" data-s="payment" onclick="setScenario(this)">
-      <span class="sc-icon">💳</span>
-      <span class="sc-name">Payment</span>
-      <span class="sc-sub">Stripe charge on retry</span>
-    </button>
-    <button class="sc-btn" data-s="trade" onclick="setScenario(this)">
-      <span class="sc-icon">📈</span>
-      <span class="sc-name">Trade order</span>
-      <span class="sc-sub">Broker ACK timeout</span>
-    </button>
-    <button class="sc-btn" data-s="email" onclick="setScenario(this)">
-      <span class="sc-icon">✉️</span>
-      <span class="sc-name">Email send</span>
-      <span class="sc-sub">SMTP retry duplicate</span>
-    </button>
-    <button class="sc-btn" data-s="webhook" onclick="setScenario(this)">
-      <span class="sc-icon">⚡</span>
-      <span class="sc-name">Webhook</span>
-      <span class="sc-sub">n8n concurrent trigger</span>
-    </button>
-  </div>
+<div class="setup-group">
+<div class="setup-group-title">V23 — Momentum Bot</div>
+<div class="setup-label">API Key ID</div>
+<input class="setup-input" id="inp-key-v23" type="text" placeholder="PKXXXXXXXXXXXXXXXXXX" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
+<div class="setup-label">API Secret Key</div>
+<input class="setup-input" id="inp-secret-v23" type="password" placeholder="Your secret key" autocomplete="off" autocorrect="off" autocapitalize="none">
+</div>
 
-  <div class="controls-row">
-    <div class="ctrl-group">
-      <span class="ctrl-label">Retries</span>
-      <input type="range" min="1" max="5" value="3" id="retrySlider" step="1" oninput="document.getElementById('retryVal').textContent=this.value">
-      <span class="retry-num" id="retryVal">3</span>
-    </div>
-    <div class="ctrl-group guard-toggle">
-      <span class="ctrl-label">Guard</span>
-      <div class="toggle-track" id="toggleTrack" onclick="toggleGuard()">
-        <div class="toggle-thumb"></div>
-      </div>
-      <span class="toggle-text" id="toggleText">Off</span>
-    </div>
-    <button class="run-btn" id="runBtn" onclick="runSim()">Run simulation</button>
-  </div>
+<div class="setup-group">
+<div class="setup-group-title">ORB — Opening Range Breakout</div>
+<div class="setup-label">API Key ID</div>
+<input class="setup-input" id="inp-key-orb" type="text" placeholder="PKXXXXXXXXXXXXXXXXXX" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
+<div class="setup-label">API Secret Key</div>
+<input class="setup-input" id="inp-secret-orb" type="password" placeholder="Your secret key" autocomplete="off" autocorrect="off" autocapitalize="none">
+</div>
 
-  <div class="panels">
-    <div class="panel">
-      <div class="panel-header">
-        <div class="panel-header-dots">
-          <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
-        </div>
-        <span class="panel-title">without_guard.py</span>
-        <span class="panel-status waiting" id="badgeA">idle</span>
-      </div>
-      <div class="log" id="logA"><span class="log-dim">$ waiting for simulation...</span></div>
-    </div>
-    <div class="panel">
-      <div class="panel-header">
-        <div class="panel-header-dots">
-          <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
-        </div>
-        <span class="panel-title">with_safeagent.py</span>
-        <span class="panel-status waiting" id="badgeB">idle</span>
-      </div>
-      <div class="log" id="logB"><span class="log-dim">$ waiting for simulation...</span></div>
-    </div>
-  </div>
+<div class="setup-group">
+<div class="setup-group-title">V24 — Near-High Gated</div>
+<div class="setup-label">API Key ID</div>
+<input class="setup-input" id="inp-key-v24" type="text" placeholder="PKXXXXXXXXXXXXXXXXXX" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
+<div class="setup-label">API Secret Key</div>
+<input class="setup-input" id="inp-secret-v24" type="password" placeholder="Your secret key" autocomplete="off" autocorrect="off" autocapitalize="none">
+</div>
 
-  <div class="metrics">
-    <div class="metric">
-      <div class="metric-label">Without guard<br>executions</div>
-      <div class="metric-val danger" id="mA">—</div>
-    </div>
-    <div class="metric">
-      <div class="metric-label">With guard<br>executions</div>
-      <div class="metric-val success" id="mB">—</div>
-    </div>
-    <div class="metric">
-      <div class="metric-label">Impact<br>prevented</div>
-      <div class="metric-val success" id="mImpact">—</div>
-    </div>
-  </div>
+<div class="err" id="setup-err"></div>
+<button class="setup-btn" id="connect-btn" type="button">Connect →</button>
+<div class="setup-note">Keys stored locally in browser storage only. Each bot uses its own separate paper account.</div>
+</div>
+</div>
 
-  <div class="insight" id="insight">Run a simulation to see the execution analysis.</div>
+<div id="dash">
+<div class="header">
+<div><div class="header-title">⚡ BOT DASHBOARD</div><div class="clock" id="clock">--:--:-- ET</div></div>
+<span class="badge badge-closed" id="badge">--</span>
+</div>
 
-  <div class="ask-row">
-    <a class="ask-btn" href="https://github.com/azender1/SafeAgent" target="_blank">View repo on GitHub ↗</a>
-    <a class="ask-btn" href="https://pypi.org/project/safeagent-exec-guard/" target="_blank">pip install safeagent-exec-guard ↗</a>
-  </div>
+<div class="sec">V23 — Momentum Bot</div>
+<div class="card"><div class="acct-inner">
+<div class="eq" id="v23-equity">Loading...</div>
+<div class="eq-lbl">Account Equity</div>
+<div class="acct-row">
+<div class="astat"><div class="astat-v neu" id="v23-buypow">—</div><div class="astat-l">Buying Power</div></div>
+<div class="astat"><div class="astat-v" id="v23-daypnl">—</div><div class="astat-l">Day P&amp;L</div></div>
+</div>
+</div></div>
+<div class="card">
+<div class="bot-hdr">
+<div class="bot-name"><span class="dot dot-wait" id="v23-dot"></span><span id="v23-status">Checking...</span></div>
+<div class="bot-pnl neu" id="v23-pnl">—</div>
+</div>
+<div class="bot-body">
+<div class="bot-stats">
+<div class="sbox"><div class="sv" id="v23-trades">—</div><div class="sl">Trades</div></div>
+<div class="sbox"><div class="sv" id="v23-wins">—</div><div class="sl">Wins</div></div>
+<div class="sbox"><div class="sv neu" id="v23-unreal">—</div><div class="sl">Open P&amp;L</div></div>
+</div>
+<div class="last" id="v23-last"><span class="et">—</span>No trades yet</div>
+</div>
+</div>
 
+<div class="sec">ORB — Opening Range Breakout</div>
+<div class="card"><div class="acct-inner">
+<div class="eq" id="orb-equity">Loading...</div>
+<div class="eq-lbl">Account Equity</div>
+<div class="acct-row">
+<div class="astat"><div class="astat-v neu" id="orb-buypow">—</div><div class="astat-l">Buying Power</div></div>
+<div class="astat"><div class="astat-v" id="orb-daypnl">—</div><div class="astat-l">Day P&amp;L</div></div>
+</div>
+</div></div>
+<div class="card">
+<div class="bot-hdr">
+<div class="bot-name"><span class="dot dot-wait" id="orb-dot"></span><span id="orb-status">Checking...</span></div>
+<div class="bot-pnl neu" id="orb-pnl">—</div>
+</div>
+<div class="bot-body">
+<div class="bot-stats">
+<div class="sbox"><div class="sv" id="orb-range">—</div><div class="sl">Range</div></div>
+<div class="sbox"><div class="sv" id="orb-entry">—</div><div class="sl">Entry</div></div>
+<div class="sbox"><div class="sv neu" id="orb-unreal">—</div><div class="sl">Open P&amp;L</div></div>
+</div>
+<div class="last" id="orb-last"><span class="et">—</span>Waiting for market open</div>
+</div>
+</div>
+
+<div class="sec">V24 — Near-High Gated / Half-Size Bear</div>
+<div class="card"><div class="acct-inner">
+<div class="eq" id="v24-equity">Loading...</div>
+<div class="eq-lbl">Account Equity</div>
+<div class="acct-row">
+<div class="astat"><div class="astat-v neu" id="v24-buypow">—</div><div class="astat-l">Buying Power</div></div>
+<div class="astat"><div class="astat-v" id="v24-daypnl">—</div><div class="astat-l">Day P&amp;L</div></div>
+</div>
+</div></div>
+<div class="card">
+<div class="bot-hdr">
+<div class="bot-name"><span class="dot dot-wait" id="v24-dot"></span><span id="v24-status">Checking...</span></div>
+<div class="bot-pnl neu" id="v24-pnl">—</div>
+</div>
+<div class="bot-body">
+<div class="bot-stats">
+<div class="sbox"><div class="sv" id="v24-trades">—</div><div class="sl">Trades</div></div>
+<div class="sbox"><div class="sv" id="v24-wins">—</div><div class="sl">Wins</div></div>
+<div class="sbox"><div class="sv neu" id="v24-unreal">—</div><div class="sl">Open P&amp;L</div></div>
+</div>
+<div class="last" id="v24-last"><span class="et">—</span>No trades yet</div>
+</div>
+</div>
+
+<div class="footer">
+Auto-refreshes every 30s
+<br>
+<button class="btn" type="button" onclick="loadAll()">↻ Refresh Now</button>
+<button class="btn-sm" type="button" onclick="resetKeys()">Reset Keys</button>
+<div class="last-ref" id="last-ref">—</div>
+</div>
 </div>
 
 <script>
-const SC = {
-  payment: {
-    amount: 299, cur: '$', unit: 'charges',
-    action: n => [
-      `<span class="log-dim">[attempt ${n}]</span> <span class="log-action">POST /v1/charges amount=29900</span>`,
-      `<span class="log-info">   → processing charge...</span>`,
-      `<span class="log-warn">   → timeout: confirmation not received</span>`,
-    ],
-    exec: () => [`<span class="log-danger">   → CHARGE EXECUTED — $299.00 debited ✗</span>`],
-    block: () => [
-      `<span class="log-success">   → request_id exists in store</span>`,
-      `<span class="log-success">   → returning cached receipt (no charge) ✓</span>`,
-    ],
-    first: () => [
-      `<span class="log-success">   → CHARGE EXECUTED — $299.00 debited ✓</span>`,
-      `<span class="log-success">   → receipt stored: req_${Math.random().toString(36).slice(2,10)}</span>`,
-    ],
-    insight: (n) => `<strong>Without the guard:</strong> $299 fires ${n} times — customer is overbilled <strong>$${((n-1)*299).toLocaleString()}</strong>. <strong>With SafeAgent:</strong> the first charge records a durable receipt. Every retry resolves against it and returns the cached result. Exactly 1 charge.`,
-  },
-  trade: {
-    amount: 710.20, cur: '$', unit: 'orders',
-    action: n => [
-      `<span class="log-dim">[attempt ${n}]</span> <span class="log-action">SUBMIT ORDER: BUY QQQ 2 @ 355.10</span>`,
-      `<span class="log-info">   request_id: rv_qqq_${Date.now()}</span>`,
-      `<span class="log-warn">   → broker ACK timeout → RESULT_UNKNOWN</span>`,
-    ],
-    exec: () => [`<span class="log-danger">   → ORDER FILLED — position doubled ✗</span>`],
-    block: () => [
-      `<span class="log-success">   → execution_id found in store</span>`,
-      `<span class="log-success">   → RETURN CACHED RESULT — no new order ✓</span>`,
-    ],
-    first: () => [
-      `<span class="log-success">   → ORDER FILLED — 2 shares @ 355.10 ✓</span>`,
-      `<span class="log-success">   → execution recorded: ex_${Math.random().toString(36).slice(2,10)}</span>`,
-    ],
-    insight: (n) => `<strong>Without the guard:</strong> ${n} orders execute — position grows to ${n*2} shares, <strong>$${(n*710.20).toFixed(2)}</strong> capital used vs intended $710.20. <strong>With SafeAgent:</strong> broker timeout triggers retries but the durable receipt ensures exactly 1 order. Retries return the cached fill.`,
-  },
-  email: {
-    amount: 0, cur: '', unit: 'sends',
-    action: n => [
-      `<span class="log-dim">[attempt ${n}]</span> <span class="log-action">SMTP SEND → user@example.com</span>`,
-      `<span class="log-info">   subject: "Your invoice #INV-2026-001"</span>`,
-      `<span class="log-warn">   → SMTP timeout — delivery status unknown</span>`,
-    ],
-    exec: () => [`<span class="log-danger">   → EMAIL SENT (duplicate) ✗</span>`],
-    block: () => [
-      `<span class="log-success">   → message_id found in store</span>`,
-      `<span class="log-success">   → SKIP — already delivered ✓</span>`,
-    ],
-    first: () => [
-      `<span class="log-success">   → EMAIL SENT ✓</span>`,
-      `<span class="log-success">   → message_id stored: msg_${Math.random().toString(36).slice(2,10)}</span>`,
-    ],
-    insight: (n) => `<strong>Without the guard:</strong> user receives ${n} identical invoices — confusion, support tickets, broken trust. <strong>With SafeAgent:</strong> the first successful delivery is recorded. All retries check the store and skip. Exactly 1 email delivered.`,
-  },
-  webhook: {
-    amount: 0, cur: '', unit: 'executions',
-    action: n => [
-      `<span class="log-dim">[worker-${n}]</span> <span class="log-action">IMAP uid=18842 picked up</span>`,
-      `<span class="log-info">   no global execution claim found</span>`,
-      `<span class="log-warn">   → proceeding with execution</span>`,
-    ],
-    exec: () => [`<span class="log-danger">   → WORKFLOW EXECUTED (ghost run) ✗</span>`],
-    block: () => [
-      `<span class="log-success">   → event_id claimed by worker-1</span>`,
-      `<span class="log-success">   → SKIP — execution already claimed ✓</span>`,
-    ],
-    first: () => [
-      `<span class="log-success">   → WORKFLOW EXECUTED ✓</span>`,
-      `<span class="log-success">   → event_id claimed: imap:inbox:uid18842</span>`,
-    ],
-    insight: (n) => `<strong>Without the guard:</strong> ${n} concurrent workers all pick up uid=18842 — ${n} workflow executions fire, duplicate notifications/DB writes. <strong>With SafeAgent:</strong> the first worker atomically claims the event_id. All others see the claim and skip. Exactly 1 execution.`,
+const BASE='https://paper-api.alpaca.markets';
+// Per-bot credential store. No hardcoded fallback keys -- previous version
+// shipped a live paper key/secret pair as a plaintext default in this
+// public repo; removed. If localStorage is empty, the setup screen shows
+// and nothing connects until real keys are entered.
+const BOTS=['v23','orb','v24'];
+let CREDS={};
+
+function getH(bot){return{'APCA-API-KEY-ID':CREDS[bot].key,'APCA-API-SECRET-KEY':CREDS[bot].secret};}
+
+document.getElementById('connect-btn').addEventListener('touchend',function(e){e.preventDefault();saveKeys();});
+document.getElementById('connect-btn').addEventListener('click',function(e){e.preventDefault();saveKeys();});
+
+async function testKey(key,secret){
+  const r=await fetch(BASE+'/v2/account',{headers:{'APCA-API-KEY-ID':key,'APCA-API-SECRET-KEY':secret}});
+  const data=await r.json();
+  if(data.code||data.message)return data.message||'auth failed';
+  return null;
+}
+
+async function saveKeys(){
+  const errEl=document.getElementById('setup-err');
+  const vals={};
+  for(const bot of BOTS){
+    const k=(document.getElementById('inp-key-'+bot).value||'').trim();
+    const s=(document.getElementById('inp-secret-'+bot).value||'').trim();
+    if(!k||!s){errEl.textContent='Enter both key and secret for '+bot.toUpperCase()+'.';return;}
+    vals[bot]={key:k,secret:s};
   }
-};
-
-let currentS = 'payment';
-let guardOn = false;
-let running = false;
-
-function setScenario(btn) {
-  document.querySelectorAll('.sc-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  currentS = btn.dataset.s;
-  resetUI();
-}
-
-function toggleGuard() {
-  guardOn = !guardOn;
-  const track = document.getElementById('toggleTrack');
-  const txt = document.getElementById('toggleText');
-  track.classList.toggle('on', guardOn);
-  txt.textContent = guardOn ? 'On' : 'Off';
-}
-
-function resetUI() {
-  document.getElementById('logA').innerHTML = '<span class="log-dim">$ waiting for simulation...</span>';
-  document.getElementById('logB').innerHTML = '<span class="log-dim">$ waiting for simulation...</span>';
-  document.getElementById('badgeA').className = 'panel-status waiting';
-  document.getElementById('badgeA').textContent = 'idle';
-  document.getElementById('badgeB').className = 'panel-status waiting';
-  document.getElementById('badgeB').textContent = 'idle';
-  document.getElementById('mA').textContent = '—';
-  document.getElementById('mB').textContent = '—';
-  document.getElementById('mImpact').textContent = '—';
-  document.getElementById('insight').textContent = 'Run a simulation to see the execution analysis.';
-}
-
-const sleep = ms => new Promise(r => setTimeout(r, ms));
-
-async function appendLine(id, html, delay) {
-  await sleep(delay);
-  const el = document.getElementById(id);
-  if (el.querySelector('.log-dim')) el.innerHTML = '';
-  const span = document.createElement('span');
-  span.className = 'log-line';
-  span.innerHTML = html + '\n';
-  el.appendChild(span);
-  el.scrollTop = el.scrollHeight;
-}
-
-async function runSim() {
-  if (running) return;
-  running = true;
-  resetUI();
-  const btn = document.getElementById('runBtn');
-  btn.disabled = true;
-  btn.textContent = 'Running...';
-
-  const retries = parseInt(document.getElementById('retrySlider').value);
-  const sc = SC[currentS];
-  let t = 0, gt = 200;
-
-  for (let i = 1; i <= retries; i++) {
-    for (const line of sc.action(i)) { await appendLine('logA', line, t); t += 160; }
-    for (const line of sc.exec()) { await appendLine('logA', line, t); t += 160; }
-    t += 60;
+  errEl.textContent='Connecting...';
+  for(const bot of BOTS){
+    const err=await testKey(vals[bot].key,vals[bot].secret);
+    if(err){errEl.textContent=bot.toUpperCase()+' auth failed: '+err;return;}
   }
-
-  for (let i = 1; i <= retries; i++) {
-    for (const line of sc.action(i)) { await appendLine('logB', line, gt); gt += 160; }
-    const lines = i === 1 ? sc.first() : sc.block();
-    for (const line of lines) { await appendLine('logB', line, gt); gt += 160; }
-    gt += 60;
+  for(const bot of BOTS){
+    localStorage.setItem('ak_'+bot,vals[bot].key);
+    localStorage.setItem('as_'+bot,vals[bot].secret);
   }
-
-  await sleep(Math.max(t, gt) + 100);
-
-  const badgeA = document.getElementById('badgeA');
-  badgeA.className = 'panel-status bad';
-  badgeA.textContent = `${retries}x executed`;
-
-  const badgeB = document.getElementById('badgeB');
-  badgeB.className = 'panel-status good';
-  badgeB.textContent = '1x executed';
-
-  document.getElementById('mA').textContent = retries;
-  document.getElementById('mB').textContent = '1';
-
-  const impact = sc.amount > 0
-    ? `${sc.cur}${((retries - 1) * sc.amount).toFixed(2)} saved`
-    : `${retries - 1} extra ${sc.unit} blocked`;
-  document.getElementById('mImpact').textContent = impact;
-  document.getElementById('insight').innerHTML = sc.insight(retries);
-
-  btn.disabled = false;
-  btn.textContent = 'Run simulation';
-  running = false;
+  CREDS=vals;
+  document.getElementById('setup').style.display='none';
+  document.getElementById('dash').style.display='block';
+  loadAll();
 }
+
+function resetKeys(){
+  for(const bot of BOTS){localStorage.removeItem('ak_'+bot);localStorage.removeItem('as_'+bot);}
+  location.reload();
+}
+
+function init(){
+  const loaded={};
+  let allPresent=true;
+  for(const bot of BOTS){
+    const k=localStorage.getItem('ak_'+bot),s=localStorage.getItem('as_'+bot);
+    if(!k||!s){allPresent=false;break;}
+    loaded[bot]={key:k,secret:s};
+  }
+  if(allPresent){
+    CREDS=loaded;
+    document.getElementById('setup').style.display='none';
+    document.getElementById('dash').style.display='block';
+    loadAll();
+  }
+}
+
+function tick(){
+  const t=new Date().toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+  document.getElementById('clock').textContent=t+' ET';
+}
+setInterval(tick,1000);tick();
+
+function mktOpen(){
+  const et=new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'}));
+  const d=et.getDay(),mins=et.getHours()*60+et.getMinutes();
+  return d>0&&d<6&&mins>=570&&mins<960;
+}
+function updateBadge(){
+  const b=document.getElementById('badge');
+  if(mktOpen()){b.textContent='OPEN';b.className='badge badge-open';}
+  else{b.textContent='CLOSED';b.className='badge badge-closed';}
+}
+setInterval(updateBadge,30000);updateBadge();
+
+function f$(n){if(n==null||n===undefined)return'—';const v=parseFloat(n);return(v>=0?'+':'')+'\$'+Math.abs(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fd(n){return'\$'+parseFloat(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function cc(n){const v=parseFloat(n);return v>0?'pos':v<0?'neg':'neu';}
+
+async function api(bot,path){
+  try{
+    const r=await fetch(BASE+path,{headers:getH(bot),mode:'cors'});
+    return await r.json();
+  }catch(e){console.error(bot,path,e);return null;}
+}
+
+async function renderAccountBlock(bot,a){
+  if(!a||a.code){document.getElementById(bot+'-equity').textContent='—';return;}
+  const eq=parseFloat(a.equity),leq=parseFloat(a.last_equity),dp=eq-leq;
+  document.getElementById(bot+'-equity').textContent=fd(eq);
+  document.getElementById(bot+'-buypow').textContent=fd(parseFloat(a.buying_power));
+  const dpEl=document.getElementById(bot+'-daypnl');
+  dpEl.textContent=f$(dp);dpEl.className='astat-v '+cc(dp);
+}
+
+function todayFilled(orders){
+  const t=new Date().toISOString().slice(0,10);
+  return(orders||[]).filter(o=>o.filled_at&&o.filled_at.slice(0,10)===t&&o.status==='filled');
+}
+
+// V23 and V24 share rendering logic -- both are momentum-style bots
+// trading TQQQ/SQQQ in their own dedicated accounts. bot param picks
+// which DOM ids and account/orders/positions to use.
+async function renderMomentumBot(bot,orders,positions){
+  const today=todayFilled(orders).filter(o=>o.symbol==='TQQQ'||o.symbol==='SQQQ');
+  const buys=today.filter(o=>o.side==='buy'),sells=today.filter(o=>o.side==='sell');
+  let pnl=0,wins=0,trades=0;
+  sells.forEach(s=>{
+    const b=buys.find(b=>b.symbol===s.symbol&&new Date(b.filled_at)<new Date(s.filled_at));
+    if(b){trades++;const p=(parseFloat(s.filled_avg_price)-parseFloat(b.filled_avg_price))*parseFloat(s.filled_qty);pnl+=p;if(p>0)wins++;}
+  });
+  const pos=(positions||[]).find(p=>p.symbol==='TQQQ'||p.symbol==='SQQQ');
+  const dot=document.getElementById(bot+'-dot'),stat=document.getElementById(bot+'-status'),pnlEl=document.getElementById(bot+'-pnl'),unrEl=document.getElementById(bot+'-unreal');
+  if(pos){
+    dot.className='dot dot-on';
+    stat.textContent=(parseFloat(pos.qty)>0?'LONG ':'SHORT ')+pos.symbol;
+    const unr=parseFloat(pos.unrealized_pl);
+    unrEl.textContent=f$(unr);unrEl.className='sv '+cc(unr);
+    const tot=pnl+unr;pnlEl.textContent=f$(tot);pnlEl.className='bot-pnl '+cc(tot);
+  }else{
+    dot.className=mktOpen()?'dot dot-wait':'dot dot-off';
+    stat.textContent=mktOpen()?(trades>0?'Watching':'Waiting for signal'):'Market closed';
+    unrEl.textContent='—';unrEl.className='sv neu';
+    pnlEl.textContent=f$(pnl);pnlEl.className='bot-pnl '+cc(pnl);
+  }
+  document.getElementById(bot+'-trades').textContent=trades||buys.length||'0';
+  document.getElementById(bot+'-wins').textContent=trades>0?wins+'/'+trades:'—';
+  const last=today.sort((a,b)=>new Date(b.filled_at)-new Date(a.filled_at))[0];
+  if(last){
+    const t=new Date(last.filled_at).toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit',hour12:false});
+    document.getElementById(bot+'-last').innerHTML=`<span class="et">${t}</span>${last.side.toUpperCase()} ${last.filled_qty} ${last.symbol} @ \$${parseFloat(last.filled_avg_price).toFixed(2)}`;
+  }
+}
+
+async function renderORB(orders,positions){
+  const today=todayFilled(orders).filter(o=>o.symbol==='TQQQ'||o.symbol==='SQQQ');
+  const pos=(positions||[]).find(p=>p.symbol==='TQQQ'||p.symbol==='SQQQ');
+  const et=new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'}));
+  const hm=et.getHours()*100+et.getMinutes();
+  const dot=document.getElementById('orb-dot'),stat=document.getElementById('orb-status'),pnlEl=document.getElementById('orb-pnl'),unrEl=document.getElementById('orb-unreal');
+  if(hm<930){dot.className='dot dot-wait';stat.textContent='Pre-market';pnlEl.textContent='—';pnlEl.className='bot-pnl neu';unrEl.textContent='—';}
+  else if(hm>=930&&hm<945){dot.className='dot dot-wait';stat.textContent='Building range...';pnlEl.textContent='—';pnlEl.className='bot-pnl neu';unrEl.textContent='—';}
+  else if(today.length===0&&mktOpen()){dot.className='dot dot-wait';stat.textContent='Watching for breakout';pnlEl.textContent='—';pnlEl.className='bot-pnl neu';unrEl.textContent='—';document.getElementById('orb-last').innerHTML='<span class="et">—</span>Watching QQQ for range break + VWAP confirm';}
+  else if(today.length>0&&pos){
+    dot.className='dot dot-on';stat.textContent=(parseFloat(pos.qty)>0?'LONG ':'SHORT ')+pos.symbol;
+    const unr=parseFloat(pos.unrealized_pl);unrEl.textContent=f$(unr);unrEl.className='sv '+cc(unr);
+    pnlEl.textContent=f$(unr);pnlEl.className='bot-pnl '+cc(unr);
+    document.getElementById('orb-entry').textContent='\$'+parseFloat(pos.avg_entry_price).toFixed(2);
+  }else if(today.length>0){
+    dot.className='dot dot-off';stat.textContent='Trade done for day';
+    const tb=today.filter(o=>o.side==='buy'),ts=today.filter(o=>o.side==='sell');
+    let cp=0;if(tb.length&&ts.length){cp=(parseFloat(ts[0].filled_avg_price)-parseFloat(tb[0].filled_avg_price))*parseFloat(ts[0].filled_qty);}
+    pnlEl.textContent=f$(cp);pnlEl.className='bot-pnl '+cc(cp);unrEl.textContent='—';
+  }else{dot.className='dot dot-off';stat.textContent='Market closed';pnlEl.textContent='—';pnlEl.className='bot-pnl neu';unrEl.textContent='—';}
+}
+
+async function loadAll(){
+  if(!CREDS.v23||!CREDS.orb||!CREDS.v24)return;
+  document.getElementById('last-ref').textContent='Refreshing...';
+
+  const [v23a,v23o,v23p]=await Promise.all([api('v23','/v2/account'),api('v23','/v2/orders?status=all&limit=100'),api('v23','/v2/positions')]);
+  const [orba,orbo,orbp]=await Promise.all([api('orb','/v2/account'),api('orb','/v2/orders?status=all&limit=100'),api('orb','/v2/positions')]);
+  const [v24a,v24o,v24p]=await Promise.all([api('v24','/v2/account'),api('v24','/v2/orders?status=all&limit=100'),api('v24','/v2/positions')]);
+
+  await renderAccountBlock('v23',v23a);
+  await renderAccountBlock('orb',orba);
+  await renderAccountBlock('v24',v24a);
+
+  await renderMomentumBot('v23',v23o,v23p);
+  await renderORB(orbo,orbp);
+  await renderMomentumBot('v24',v24o,v24p);
+
+  const t=new Date().toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('last-ref').textContent='Updated '+t+' ET';
+}
+setInterval(loadAll,30000);
+init();
 </script>
 </body>
 </html>
