@@ -141,7 +141,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 <div class="eq" id="orb-equity">Loading...</div>
 <div class="eq-lbl">Account Equity</div>
 <div class="acct-row">
-<div class="astat"><div class="astat-v neu" id="orb-buypow">—</div><div class="astat-l">Buying Power</div></div>
+<div class="astat"><div class="astat-v neu" id="orb-buypow">—</div><div class="astat-l">Running Balance</div></div>
 <div class="astat"><div class="astat-v" id="orb-daypnl">—</div><div class="astat-l">Day P&amp;L</div></div>
 </div>
 </div></div>
@@ -206,6 +206,49 @@ const BASE='https://paper-api.alpaca.markets';
 // visible labels and rendering changed.
 const BOTS=['v23','orb','v24'];
 let CREDS={};
+
+// DOW virtual strategy bankroll (card id "orb"): dow_momentum_v1.py trades
+// on the shared ORB-legacy account, whose real equity/buying power reflect
+// the WHOLE account (retired ORB's history, margin headroom, etc.), not
+// this strategy alone. This tracks a separate, virtual bankroll seeded at
+// $1500 starting 2026-09-10: each trading day's ending total (realized +
+// unrealized P&L) becomes the next day's starting balance. Persisted in
+// localStorage since this is a client-only page with no backend to run an
+// end-of-day job -- "end of day" here means whatever total was last
+// observed before the browser saw a new ET calendar date, not necessarily
+// the exact 4pm close if the dashboard wasn't open then.
+const DOW_BANKROLL_START_DATE='2026-09-10';
+const DOW_BANKROLL_START_AMOUNT=1500;
+
+function etDateStr(){
+  const et=new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'}));
+  return et.getFullYear()+'-'+String(et.getMonth()+1).padStart(2,'0')+'-'+String(et.getDate()).padStart(2,'0');
+}
+
+function rollDowBankroll(){
+  const today=etDateStr();
+  let date=localStorage.getItem('bal_orb_date');
+  let balance=parseFloat(localStorage.getItem('bal_orb_balance'));
+  let lastPnl=parseFloat(localStorage.getItem('bal_orb_last_pnl'));
+  if(date===null||isNaN(balance)){
+    if(today<DOW_BANKROLL_START_DATE)return null; // not started yet
+    date=today;balance=DOW_BANKROLL_START_AMOUNT;lastPnl=0;
+    localStorage.setItem('bal_orb_date',date);
+    localStorage.setItem('bal_orb_balance',String(balance));
+    localStorage.setItem('bal_orb_last_pnl',String(lastPnl));
+  }else if(date<today){
+    balance=balance+(isNaN(lastPnl)?0:lastPnl);
+    date=today;lastPnl=0;
+    localStorage.setItem('bal_orb_date',date);
+    localStorage.setItem('bal_orb_balance',String(balance));
+    localStorage.setItem('bal_orb_last_pnl',String(lastPnl));
+  }
+  return{date,balance};
+}
+
+function updateDowBankrollLastPnl(tot){
+  localStorage.setItem('bal_orb_last_pnl',String(isNaN(tot)?0:tot));
+}
 
 function getH(bot){return{'APCA-API-KEY-ID':CREDS[bot].key,'APCA-API-SECRET-KEY':CREDS[bot].secret};}
 
@@ -322,17 +365,28 @@ async function renderMomentumBot(bot,orders,positions,symbols){
   });
   const pos=(positions||[]).find(p=>symbols.includes(p.symbol));
   const dot=document.getElementById(bot+'-dot'),stat=document.getElementById(bot+'-status'),pnlEl=document.getElementById(bot+'-pnl'),unrEl=document.getElementById(bot+'-unreal');
+  let todayTotal=pnl;
   if(pos){
     dot.className='dot dot-on';
     stat.textContent=(parseFloat(pos.qty)>0?'LONG ':'SHORT ')+pos.symbol;
     const unr=parseFloat(pos.unrealized_pl);
     unrEl.textContent=f$(unr);unrEl.className='sv '+cc(unr);
-    const tot=pnl+unr;pnlEl.textContent=f$(tot);pnlEl.className='bot-pnl '+cc(tot);
+    todayTotal=pnl+unr;pnlEl.textContent=f$(todayTotal);pnlEl.className='bot-pnl '+cc(todayTotal);
   }else{
     dot.className=mktOpen()?'dot dot-wait':'dot dot-off';
     stat.textContent=mktOpen()?(trades>0?'Watching':'Waiting for signal'):'Market closed';
     unrEl.textContent='—';unrEl.className='sv neu';
-    pnlEl.textContent=f$(pnl);pnlEl.className='bot-pnl '+cc(pnl);
+    pnlEl.textContent=f$(todayTotal);pnlEl.className='bot-pnl '+cc(todayTotal);
+  }
+  if(bot==='orb'){
+    updateDowBankrollLastPnl(todayTotal);
+    const roll=rollDowBankroll();
+    if(roll){
+      document.getElementById('orb-equity').textContent=fd(roll.balance);
+      document.getElementById('orb-buypow').textContent=fd(roll.balance+todayTotal);
+      const dpEl=document.getElementById('orb-daypnl');
+      dpEl.textContent=f$(todayTotal);dpEl.className='astat-v '+cc(todayTotal);
+    }
   }
   document.getElementById(bot+'-trades').textContent=trades||buys.length||'0';
   document.getElementById(bot+'-wins').textContent=trades>0?wins+'/'+trades:'—';
