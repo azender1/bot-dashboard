@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -82,7 +82,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 </div>
 
 <div class="setup-group">
-<div class="setup-group-title">ORB — Opening Range Breakout</div>
+<!-- internal id stays "orb": DOW (dow_momentum_v1.py) trades on ORB's old
+     account/keys (retired 2026-09-06), so keeping the id avoids forcing
+     re-entry of the same real credentials that are already saved. -->
+<div class="setup-group-title">DOW — Momentum Bot (DDM/DXD)</div>
 <div class="setup-label">API Key ID</div>
 <input class="setup-input" id="inp-key-orb" type="text" placeholder="PKXXXXXXXXXXXXXXXXXX" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
 <div class="setup-label">API Secret Key</div>
@@ -133,7 +136,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 </div>
 </div>
 
-<div class="sec">ORB — Opening Range Breakout</div>
+<div class="sec">DOW — Momentum Bot (DDM/DXD)</div>
 <div class="card"><div class="acct-inner">
 <div class="eq" id="orb-equity">Loading...</div>
 <div class="eq-lbl">Account Equity</div>
@@ -149,11 +152,11 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:1
 </div>
 <div class="bot-body">
 <div class="bot-stats">
-<div class="sbox"><div class="sv" id="orb-range">—</div><div class="sl">Range</div></div>
-<div class="sbox"><div class="sv" id="orb-entry">—</div><div class="sl">Entry</div></div>
+<div class="sbox"><div class="sv" id="orb-trades">—</div><div class="sl">Trades</div></div>
+<div class="sbox"><div class="sv" id="orb-wins">—</div><div class="sl">Wins</div></div>
 <div class="sbox"><div class="sv neu" id="orb-unreal">—</div><div class="sl">Open P&amp;L</div></div>
 </div>
-<div class="last" id="orb-last"><span class="et">—</span>Waiting for market open</div>
+<div class="last" id="orb-last"><span class="et">—</span>No trades yet</div>
 </div>
 </div>
 
@@ -196,6 +199,11 @@ const BASE='https://paper-api.alpaca.markets';
 // shipped a live paper key/secret pair as a plaintext default in this
 // public repo; removed. If localStorage is empty, the setup screen shows
 // and nothing connects until real keys are entered.
+// 'orb' is a legacy id: ORB (opening-range-breakout) was retired 2026-09-06
+// and replaced by the DOW momentum bot (DDM/DXD), which trades on the same
+// account/keys ORB used. Kept as 'orb' throughout (localStorage keys,
+// element ids) so already-saved credentials keep working -- only the
+// visible labels and rendering changed.
 const BOTS=['v23','orb','v24'];
 let CREDS={};
 
@@ -299,18 +307,20 @@ function todayFilled(orders){
   return(orders||[]).filter(o=>o.filled_at&&o.filled_at.slice(0,10)===t&&o.status==='filled');
 }
 
-// V23 and V24 share rendering logic -- both are momentum-style bots
-// trading TQQQ/SQQQ in their own dedicated accounts. bot param picks
-// which DOM ids and account/orders/positions to use.
-async function renderMomentumBot(bot,orders,positions){
-  const today=todayFilled(orders).filter(o=>o.symbol==='TQQQ'||o.symbol==='SQQQ');
+// V23, V24, and DOW (id "orb", kept for its pre-existing saved credentials
+// -- see setup section) all share this rendering logic -- all three are
+// momentum-style bots trading a leveraged bull/bear pair in their own
+// dedicated accounts. symbols picks which pair this bot trades so the
+// order/position filtering matches the right instruments.
+async function renderMomentumBot(bot,orders,positions,symbols){
+  const today=todayFilled(orders).filter(o=>symbols.includes(o.symbol));
   const buys=today.filter(o=>o.side==='buy'),sells=today.filter(o=>o.side==='sell');
   let pnl=0,wins=0,trades=0;
   sells.forEach(s=>{
     const b=buys.find(b=>b.symbol===s.symbol&&new Date(b.filled_at)<new Date(s.filled_at));
     if(b){trades++;const p=(parseFloat(s.filled_avg_price)-parseFloat(b.filled_avg_price))*parseFloat(s.filled_qty);pnl+=p;if(p>0)wins++;}
   });
-  const pos=(positions||[]).find(p=>p.symbol==='TQQQ'||p.symbol==='SQQQ');
+  const pos=(positions||[]).find(p=>symbols.includes(p.symbol));
   const dot=document.getElementById(bot+'-dot'),stat=document.getElementById(bot+'-status'),pnlEl=document.getElementById(bot+'-pnl'),unrEl=document.getElementById(bot+'-unreal');
   if(pos){
     dot.className='dot dot-on';
@@ -333,28 +343,6 @@ async function renderMomentumBot(bot,orders,positions){
   }
 }
 
-async function renderORB(orders,positions){
-  const today=todayFilled(orders).filter(o=>o.symbol==='TQQQ'||o.symbol==='SQQQ');
-  const pos=(positions||[]).find(p=>p.symbol==='TQQQ'||p.symbol==='SQQQ');
-  const et=new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'}));
-  const hm=et.getHours()*100+et.getMinutes();
-  const dot=document.getElementById('orb-dot'),stat=document.getElementById('orb-status'),pnlEl=document.getElementById('orb-pnl'),unrEl=document.getElementById('orb-unreal');
-  if(hm<930){dot.className='dot dot-wait';stat.textContent='Pre-market';pnlEl.textContent='—';pnlEl.className='bot-pnl neu';unrEl.textContent='—';}
-  else if(hm>=930&&hm<945){dot.className='dot dot-wait';stat.textContent='Building range...';pnlEl.textContent='—';pnlEl.className='bot-pnl neu';unrEl.textContent='—';}
-  else if(today.length===0&&mktOpen()){dot.className='dot dot-wait';stat.textContent='Watching for breakout';pnlEl.textContent='—';pnlEl.className='bot-pnl neu';unrEl.textContent='—';document.getElementById('orb-last').innerHTML='<span class="et">—</span>Watching QQQ for range break + VWAP confirm';}
-  else if(today.length>0&&pos){
-    dot.className='dot dot-on';stat.textContent=(parseFloat(pos.qty)>0?'LONG ':'SHORT ')+pos.symbol;
-    const unr=parseFloat(pos.unrealized_pl);unrEl.textContent=f$(unr);unrEl.className='sv '+cc(unr);
-    pnlEl.textContent=f$(unr);pnlEl.className='bot-pnl '+cc(unr);
-    document.getElementById('orb-entry').textContent='\$'+parseFloat(pos.avg_entry_price).toFixed(2);
-  }else if(today.length>0){
-    dot.className='dot dot-off';stat.textContent='Trade done for day';
-    const tb=today.filter(o=>o.side==='buy'),ts=today.filter(o=>o.side==='sell');
-    let cp=0;if(tb.length&&ts.length){cp=(parseFloat(ts[0].filled_avg_price)-parseFloat(tb[0].filled_avg_price))*parseFloat(ts[0].filled_qty);}
-    pnlEl.textContent=f$(cp);pnlEl.className='bot-pnl '+cc(cp);unrEl.textContent='—';
-  }else{dot.className='dot dot-off';stat.textContent='Market closed';pnlEl.textContent='—';pnlEl.className='bot-pnl neu';unrEl.textContent='—';}
-}
-
 async function loadAll(){
   if(!CREDS.v23||!CREDS.orb||!CREDS.v24)return;
   document.getElementById('last-ref').textContent='Refreshing...';
@@ -367,9 +355,9 @@ async function loadAll(){
   await renderAccountBlock('orb',orba);
   await renderAccountBlock('v24',v24a);
 
-  await renderMomentumBot('v23',v23o,v23p);
-  await renderORB(orbo,orbp);
-  await renderMomentumBot('v24',v24o,v24p);
+  await renderMomentumBot('v23',v23o,v23p,['TQQQ','SQQQ']);
+  await renderMomentumBot('orb',orbo,orbp,['DDM','DXD']);
+  await renderMomentumBot('v24',v24o,v24p,['TQQQ','SQQQ']);
 
   const t=new Date().toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit',second:'2-digit'});
   document.getElementById('last-ref').textContent='Updated '+t+' ET';
