@@ -5,7 +5,7 @@ $WebRoot   = $PSScriptRoot
 $StatePath = Join-Path $RiderRoot "runtime\state.json"
 $IndexPath = Join-Path $WebRoot "index.html"
 
-function H([object]$x) {
+function HtmlEncode([object]$x) {
     if ($null -eq $x) { return "" }
     return [System.Net.WebUtility]::HtmlEncode([string]$x)
 }
@@ -60,14 +60,14 @@ if (Test-Path $StatePath) {
 $loserRows = ""
 foreach ($x in $losers) {
     $q = if ($x.qualified) { '<span class="yes">YES</span>' } else { '<span class="no">NO</span>' }
-    $loserRows += "<tr><td><b>$(H $x.symbol)</b></td><td>$(H (Pct $x.day))</td><td>$(H (Num1 $x.score))</td><td>$(H (Pct $x.rel))</td><td>$(H (Pct $x.vwap_dist))</td><td>$q</td></tr>"
+    $loserRows += "<tr><td><b>$(HtmlEncode $x.symbol)</b></td><td>$(HtmlEncode (Pct $x.day))</td><td>$(HtmlEncode (Num1 $x.score))</td><td>$(HtmlEncode (Pct $x.rel))</td><td>$(HtmlEncode (Pct $x.vwap_dist))</td><td>$q</td></tr>"
 }
 if (-not $loserRows) { $loserRows = '<tr><td colspan="6" class="mutedText">No loser candidates yet</td></tr>' }
 
 $winnerRows = ""
 foreach ($x in $winners) {
     $q = if ($x.qualified) { '<span class="yes">YES</span>' } else { '<span class="no">NO</span>' }
-    $winnerRows += "<tr><td><b>$(H $x.symbol)</b></td><td>$(H (Pct $x.day))</td><td>$(H (Num1 $x.score))</td><td>$(H (Pct $x.rel))</td><td>$(H (Pct $x.vwap_dist))</td><td>$q</td></tr>"
+    $winnerRows += "<tr><td><b>$(HtmlEncode $x.symbol)</b></td><td>$(HtmlEncode (Pct $x.day))</td><td>$(HtmlEncode (Num1 $x.score))</td><td>$(HtmlEncode (Pct $x.rel))</td><td>$(HtmlEncode (Pct $x.vwap_dist))</td><td>$q</td></tr>"
 }
 if (-not $winnerRows) { $winnerRows = '<tr><td colspan="6" class="mutedText">No winner candidates yet</td></tr>' }
 
@@ -78,17 +78,17 @@ if ($positions.Count -eq 0) {
     foreach ($p in $positions) {
         $v = $p.Value
         $sideClass = if ($v.side -eq "LONG") { "long" } else { "short" }
-        $positionCards += "<div class='position $sideClass'><div><b>$(H $p.Name)</b> <span class='pill'>$(H $v.side)</span></div><div class='small'>Status: $(H $v.status)</div><div class='small'>Entry ref: $(H $v.entry_reference) &nbsp; Stop: $(H $v.stop_price)</div><div class='small'>Score: $(H $v.score)</div></div>"
+        $positionCards += "<div class='position $sideClass'><div><b>$(HtmlEncode $p.Name)</b> <span class='pill'>$(HtmlEncode $v.side)</span></div><div class='small'>Status: $(HtmlEncode $v.status)</div><div class='small'>Entry ref: $(HtmlEncode $v.entry_reference) &nbsp; Stop: $(HtmlEncode $v.stop_price)</div><div class='small'>Score: $(HtmlEncode $v.score)</div></div>"
     }
 }
 
 $tradeItems = ""
 if ($trades.Count -eq 0) { $tradeItems = '<li>none</li>' }
-else { foreach ($t in $trades) { $tradeItems += "<li>$(H $t)</li>" } }
+else { foreach ($t in $trades) { $tradeItems += "<li>$(HtmlEncode $t)</li>" } }
 
 $errorItems = ""
 if ($errors.Count -eq 0) { $errorItems = '<li>none</li>' }
-else { foreach ($e in $errors) { $errorItems += "<li>$(H $e)</li>" } }
+else { foreach ($e in $errors) { $errorItems += "<li>$(HtmlEncode $e)</li>" } }
 
 $modeClass = ModeClass $mode
 $haltClass = if ($halt -eq "none") { "good" } else { "bad" }
@@ -122,19 +122,19 @@ ul{padding-left:20px;margin:5px 0}li{margin:5px 0;font-size:12px;word-break:brea
 </head>
 <body>
 <div class="wrap">
-<div class="header"><div><h1>Rider Council Live</h1><div class="sub">Trading date $(H $date) · web publish $($now.ToString("yyyy-MM-dd HH:mm:ss")) ET</div></div><div class="badge $modeClass">$(H $mode)</div></div>
+<div class="header"><div><h1>Rider Council Live</h1><div class="sub">Trading date $(HtmlEncode $date) - web publish $($now.ToString("yyyy-MM-dd HH:mm:ss")) ET</div></div><div class="badge $modeClass">$(HtmlEncode $mode)</div></div>
 <div class="grid">
-<div class="stat"><div class="k">Scans</div><div class="v">$(H $scans)</div></div>
-<div class="stat"><div class="k">Entries</div><div class="v">$(H $entries)</div></div>
-<div class="stat"><div class="k">Exits</div><div class="v">$(H $exits)</div></div>
-<div class="stat"><div class="k">Halt</div><div class="v halt $haltClass" style="font-size:15px">$(H $halt)</div></div>
+<div class="stat"><div class="k">Scans</div><div class="v">$(HtmlEncode $scans)</div></div>
+<div class="stat"><div class="k">Entries</div><div class="v">$(HtmlEncode $entries)</div></div>
+<div class="stat"><div class="k">Exits</div><div class="v">$(HtmlEncode $exits)</div></div>
+<div class="stat"><div class="k">Halt</div><div class="v halt $haltClass" style="font-size:15px">$(HtmlEncode $halt)</div></div>
 </div>
-<div class="card"><h2>Bear · Loser Rider</h2><table><thead><tr><th>Symbol</th><th>Day</th><th>Score</th><th>Rel</th><th>VWAP</th><th>Go?</th></tr></thead><tbody>$loserRows</tbody></table></div>
-<div class="card"><h2>Bull · Winner Rider</h2><table><thead><tr><th>Symbol</th><th>Day</th><th>Score</th><th>Rel</th><th>VWAP</th><th>Go?</th></tr></thead><tbody>$winnerRows</tbody></table></div>
+<div class="card"><h2>Bear - Loser Rider</h2><table><thead><tr><th>Symbol</th><th>Day</th><th>Score</th><th>Rel</th><th>VWAP</th><th>Go?</th></tr></thead><tbody>$loserRows</tbody></table></div>
+<div class="card"><h2>Bull - Winner Rider</h2><table><thead><tr><th>Symbol</th><th>Day</th><th>Score</th><th>Rel</th><th>VWAP</th><th>Go?</th></tr></thead><tbody>$winnerRows</tbody></table></div>
 <div class="card"><h2>Managed positions</h2><div class="positions">$positionCards</div></div>
 <div class="card"><h2>Recent actions</h2><ul>$tradeItems</ul></div>
 <div class="card"><h2>Errors</h2><ul>$errorItems</ul></div>
-<div class="footer">Last engine scan UTC: $(H $lastScan)<br>Sanitized paper-trading monitor. No credentials published. Auto-refreshes every 60 seconds.</div>
+<div class="footer">Last engine scan UTC: $(HtmlEncode $lastScan)<br>Sanitized paper-trading monitor. No credentials published. Auto-refreshes every 60 seconds.</div>
 </div>
 </body>
 </html>
