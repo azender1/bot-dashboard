@@ -54,7 +54,22 @@ if (Test-Path $StatePath) {
     $winners = @($s.top_winners) | Select-Object -First 8
     if ($s.managed_positions) { $positions = @($s.managed_positions.PSObject.Properties) }
     $trades = @($s.trades) | Select-Object -Last 8
-    $errors = @($s.errors) | Select-Object -Last 5
+    $allErrors = @($s.errors)
+    if ($lastScan) {
+        $errors = @($allErrors | Where-Object {
+            $m = [regex]::Match([string]$_, '^(?<ts>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z)')
+            if (-not $m.Success) { return $true }
+            try {
+                $errTime = [DateTimeOffset]::Parse($m.Groups['ts'].Value)
+                $scanTime = [DateTimeOffset]::Parse($lastScan)
+                return $errTime -gt $scanTime
+            } catch {
+                return $true
+            }
+        } | Select-Object -Last 5)
+    } else {
+        $errors = @($allErrors | Select-Object -Last 5)
+    }
 }
 
 $loserRows = ""
