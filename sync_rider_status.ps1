@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-$RiderRoot = "C:\trading\rider_council_v1_friday"
+$RiderRoot = if (Test-Path "C:\trading\rider_council_v1_1_iex") { "C:\trading\rider_council_v1_1_iex" } else { "C:\trading\rider_council_v1_friday" }
 $WebRoot   = $PSScriptRoot
 $StatePath = Join-Path $RiderRoot "runtime\state.json"
 $IndexPath = Join-Path $WebRoot "index.html"
