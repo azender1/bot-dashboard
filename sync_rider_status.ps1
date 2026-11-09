@@ -31,8 +31,10 @@ $now = Get-Date
 $mode = "NO STATE"
 $date = ""
 $scans = 0
-$entries = 0
-$exits = 0
+$entryOrders = 0
+$fills = 0
+$closedTrades = 0
+$riderPnl = $null
 $halt = "none"
 $lastScan = ""
 $losers = @()
@@ -46,8 +48,22 @@ if (Test-Path $StatePath) {
     $mode = [string]$s.mode
     $date = [string]$s.date_et
     $scans = $s.scan_count
-    $entries = $s.paper_entries
-    $exits = $s.paper_exits
+    if ($s.trade_ledger) {
+        $ledger = @($s.trade_ledger | Where-Object { $_.date_et -eq $date })
+        $entryOrders = @($ledger | Where-Object { $_.entry_order_id }).Count
+        $fills = @($ledger | Where-Object { [double]($_.entry_filled_qty) -gt 0 }).Count
+        $closedTrades = @($ledger | Where-Object { $_.status -eq "CLOSED" }).Count
+        $riderPnl = 0.0
+        foreach ($t in $ledger) {
+            if ($t.status -eq "CLOSED" -and $null -ne $t.realized_pnl) {
+                $riderPnl += [double]$t.realized_pnl
+            }
+        }
+    } else {
+        $entryOrders = [int]$s.paper_entries
+        $fills = [int]$s.paper_entries
+        $closedTrades = [int]$s.paper_exits
+    }
     $halt = if ($s.halt_reason) { [string]$s.halt_reason } else { "none" }
     $lastScan = [string]$s.last_scan_utc
     $losers = @($s.top_losers) | Select-Object -First 8
@@ -122,7 +138,7 @@ $html = @"
 .wrap{max-width:920px;margin:auto;padding:16px 12px 40px}.header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px}
 h1{font-size:25px;margin:0}.sub{color:var(--muted);font-size:12px;margin-top:5px}.badge{padding:7px 10px;border-radius:999px;font-weight:800;font-size:12px;background:#1b2633}
 .badge.good{color:var(--good)}.badge.bad{color:var(--bad)}.badge.warn{color:var(--warn)}.badge.muted{color:var(--muted)}
-.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}.stat,.card{background:var(--card);border:1px solid var(--line);border-radius:14px}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px}.stat,.card{background:var(--card);border:1px solid var(--line);border-radius:14px}
 .stat{padding:12px}.stat .k{font-size:11px;color:var(--muted);text-transform:uppercase}.stat .v{font-size:22px;font-weight:800;margin-top:4px}
 .card{padding:14px;margin-bottom:12px}h2{font-size:17px;margin:0 0 10px}
 table{width:100%;border-collapse:collapse;font-size:13px}th{color:var(--muted);font-size:10px;text-transform:uppercase;text-align:right;padding:7px 5px;border-bottom:1px solid var(--line)}
@@ -140,9 +156,35 @@ ul{padding-left:20px;margin:5px 0}li{margin:5px 0;font-size:12px;word-break:brea
 <div class="header"><div><h1>Rider Council Live</h1><div class="sub">Trading date $(HtmlEncode $date) - web publish $($now.ToString("yyyy-MM-dd HH:mm:ss")) ET</div></div><div class="badge $modeClass">$(HtmlEncode $mode)</div></div>
 <div class="grid">
 <div class="stat"><div class="k">Scans</div><div class="v">$(HtmlEncode $scans)</div></div>
-<div class="stat"><div class="k">Entries</div><div class="v">$(HtmlEncode $entries)</div></div>
-<div class="stat"><div class="k">Exits</div><div class="v">$(HtmlEncode $exits)</div></div>
-<div class="stat"><div class="k">Halt</div><div class="v halt $haltClass" style="font-size:15px">$(HtmlEncode $halt)</div></div>
+<div class="stat"><div class="k">Orders</div><div class="v">$(HtmlEncode $entryOrders)</div></div>
+<div class="stat"><div class="k">Fills</div><div class="v">$(HtmlEncode $fills)</div></div>
+<div class="stat"><div class="k">Closed</div><div class="v">$(HtmlEncode $closedTrades)</div></div>
+<div class="stat"><div class="k">Rider P/L</div><div class="v" style="font-size:16px">$(if ($null -eq $riderPnl) { "n/a" } else { ('
+</div>
+<div class="card"><h2>Engine status</h2><div class="small">Halt: <span class="halt $haltClass">$(HtmlEncode $halt)</span></div></div>
+<div class="card"><h2>Bear - Loser Rider</h2><table><thead><tr><th>Symbol</th><th>Day</th><th>Score</th><th>Rel</th><th>VWAP</th><th>Go?</th></tr></thead><tbody>$loserRows</tbody></table></div>
+<div class="card"><h2>Bull - Winner Rider</h2><table><thead><tr><th>Symbol</th><th>Day</th><th>Score</th><th>Rel</th><th>VWAP</th><th>Go?</th></tr></thead><tbody>$winnerRows</tbody></table></div>
+<div class="card"><h2>Managed positions</h2><div class="positions">$positionCards</div></div>
+<div class="card"><h2>Recent actions</h2><ul>$tradeItems</ul></div>
+<div class="card"><h2>Errors</h2><ul>$errorItems</ul></div>
+<div class="footer">Last engine scan UTC: $(HtmlEncode $lastScan)<br>Sanitized paper-trading monitor. No credentials published. Auto-refreshes every 60 seconds.</div>
+</div>
+</body>
+</html>
+"@
+
+$html | Set-Content $IndexPath -Encoding UTF8
+
+Set-Location $WebRoot
+git add index.html
+$changes = git status --porcelain
+if (-not $changes) { exit 0 }
+
+git commit -m "Update Rider Council live status $($now.ToString('yyyy-MM-dd HH:mm'))" | Out-Host
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+git push origin main | Out-Host
+exit $LASTEXITCODE
+ + ('{0:N2}' -f $riderPnl)) })</div></div>
 </div>
 <div class="card"><h2>Bear - Loser Rider</h2><table><thead><tr><th>Symbol</th><th>Day</th><th>Score</th><th>Rel</th><th>VWAP</th><th>Go?</th></tr></thead><tbody>$loserRows</tbody></table></div>
 <div class="card"><h2>Bull - Winner Rider</h2><table><thead><tr><th>Symbol</th><th>Day</th><th>Score</th><th>Rel</th><th>VWAP</th><th>Go?</th></tr></thead><tbody>$winnerRows</tbody></table></div>
