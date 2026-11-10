@@ -178,8 +178,8 @@ $html | Set-Content $IndexPath -Encoding UTF8
 
 Set-Location $WebRoot
 git add index.html
-$changes = git status --porcelain
-if (-not $changes) { exit 0 }
+git diff --cached --quiet
+if ($LASTEXITCODE -eq 0) { exit 0 }
 
 git commit -m "Update Rider Council live status $($now.ToString('yyyy-MM-dd HH:mm'))" | Out-Host
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
