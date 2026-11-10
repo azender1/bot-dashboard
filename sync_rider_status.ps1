@@ -123,6 +123,7 @@ else { foreach ($e in $errors) { $errorItems += "<li>$(HtmlEncode $e)</li>" } }
 
 $modeClass = ModeClass $mode
 $haltClass = if ($halt -eq "none") { "good" } else { "bad" }
+$riderPnlText = if ($null -eq $riderPnl) { "n/a" } else { '$' + ('{0:N2}' -f [double]$riderPnl) }
 
 $html = @"
 <!doctype html>
@@ -159,7 +160,7 @@ ul{padding-left:20px;margin:5px 0}li{margin:5px 0;font-size:12px;word-break:brea
 <div class="stat"><div class="k">Orders</div><div class="v">$(HtmlEncode $entryOrders)</div></div>
 <div class="stat"><div class="k">Fills</div><div class="v">$(HtmlEncode $fills)</div></div>
 <div class="stat"><div class="k">Closed</div><div class="v">$(HtmlEncode $closedTrades)</div></div>
-<div class="stat"><div class="k">Rider P/L</div><div class="v" style="font-size:16px">$(if ($null -eq $riderPnl) { "n/a" } else { ('
+<div class="stat"><div class="k">Rider P/L</div><div class="v" style="font-size:16px">$(HtmlEncode $riderPnlText)</div></div>
 </div>
 <div class="card"><h2>Engine status</h2><div class="small">Halt: <span class="halt $haltClass">$(HtmlEncode $halt)</span></div></div>
 <div class="card"><h2>Bear - Loser Rider</h2><table><thead><tr><th>Symbol</th><th>Day</th><th>Score</th><th>Rel</th><th>VWAP</th><th>Go?</th></tr></thead><tbody>$loserRows</tbody></table></div>
@@ -182,29 +183,6 @@ if (-not $changes) { exit 0 }
 
 git commit -m "Update Rider Council live status $($now.ToString('yyyy-MM-dd HH:mm'))" | Out-Host
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-git push origin main | Out-Host
-exit $LASTEXITCODE
- + ('{0:N2}' -f $riderPnl)) })</div></div>
-</div>
-<div class="card"><h2>Bear - Loser Rider</h2><table><thead><tr><th>Symbol</th><th>Day</th><th>Score</th><th>Rel</th><th>VWAP</th><th>Go?</th></tr></thead><tbody>$loserRows</tbody></table></div>
-<div class="card"><h2>Bull - Winner Rider</h2><table><thead><tr><th>Symbol</th><th>Day</th><th>Score</th><th>Rel</th><th>VWAP</th><th>Go?</th></tr></thead><tbody>$winnerRows</tbody></table></div>
-<div class="card"><h2>Managed positions</h2><div class="positions">$positionCards</div></div>
-<div class="card"><h2>Recent actions</h2><ul>$tradeItems</ul></div>
-<div class="card"><h2>Errors</h2><ul>$errorItems</ul></div>
-<div class="footer">Last engine scan UTC: $(HtmlEncode $lastScan)<br>Sanitized paper-trading monitor. No credentials published. Auto-refreshes every 60 seconds.</div>
-</div>
-</body>
-</html>
-"@
 
-$html | Set-Content $IndexPath -Encoding UTF8
-
-Set-Location $WebRoot
-git add index.html
-$changes = git status --porcelain
-if (-not $changes) { exit 0 }
-
-git commit -m "Update Rider Council live status $($now.ToString('yyyy-MM-dd HH:mm'))" | Out-Host
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 git push origin main | Out-Host
 exit $LASTEXITCODE
