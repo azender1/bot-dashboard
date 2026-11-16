@@ -14,10 +14,12 @@ Write-Host "Publishing BearPath Live now..."
 powershell -NoProfile -ExecutionPolicy Bypass -File $Sync
 if ($LASTEXITCODE -ne 0) { throw "Initial BearPath dashboard sync failed." }
 
-schtasks.exe /Delete /TN "RiderCouncilWebSync" /F 1>$null 2>$null
-schtasks.exe /Delete /TN "BearPathWebSync" /F 1>$null 2>$null
-schtasks.exe /Delete /TN "BearPathMorningFreeze" /F 1>$null 2>$null
-schtasks.exe /Delete /TN "BearPathEODGrade" /F 1>$null 2>$null
+foreach ($taskName in @("RiderCouncilWebSync","BearPathWebSync","BearPathMorningFreeze","BearPathEODGrade")) {
+    $existing = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+    if ($existing) {
+        Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
+    }
+}
 
 $SyncCmd = 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "' + $Sync + '"'
 $MorningCmd = 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "' + $Morning + '"'
