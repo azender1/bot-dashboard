@@ -34,7 +34,11 @@ if ($grade -and $grade.picks) {
 
 $snapshots = $null
 $liveError = $null
-if (-not $grade) {
+$targetDate = [datetime]::ParseExact([string]$man.target_date, "yyyy-MM-dd", $null).Date
+$todayLocal = (Get-Date).Date
+$isTargetDay = ($todayLocal -eq $targetDate)
+
+if (-not $grade -and $isTargetDay) {
     $key = $env:APCA_API_KEY_ID
     $secret = if ($env:APCA_API_SECRET_KEY) { $env:APCA_API_SECRET_KEY } else { $env:APCA_API_SECRET }
     if ($key -and $secret) {
@@ -77,10 +81,19 @@ foreach ($x in @($man.top)) {
         if ($mr -le 50) { $tags += '<span class="tag top50">TOP 50</span>' }
         elseif ($mr -le 100) { $tags += '<span class="tag top100">TOP 100</span>' }
     } elseif ($snapshots -and ($snapshots.PSObject.Properties.Name -contains $sym)) {
-        $s = $snapshots.$sym
-        if ($s.latestTrade -and $null -ne $s.latestTrade.p) { $price = [double]$s.latestTrade.p }
-        elseif ($s.minuteBar -and $null -ne $s.minuteBar.c) { $price = [double]$s.minuteBar.c }
-        elseif ($s.dailyBar -and $null -ne $s.dailyBar.c) { $price = [double]$s.dailyBar.c }
+        $snap = $snapshots.$sym
+        $tradeIsToday = $false
+        if ($snap.latestTrade -and $snap.latestTrade.t) {
+            try {
+                $tradeTime = [DateTimeOffset]::Parse([string]$snap.latestTrade.t).LocalDateTime
+                $tradeIsToday = ($tradeTime.Date -eq $targetDate)
+            } catch {
+                $tradeIsToday = $false
+            }
+        }
+        if ($tradeIsToday -and $null -ne $snap.latestTrade.p) {
+            $price = [double]$snap.latestTrade.p
+        }
         if ($null -ne $price -and $ref -ne 0) { $move = (($price / $ref) - 1.0) * 100.0 }
     }
 
@@ -123,9 +136,15 @@ if ($grade) {
     $midLabel = "Top-50 hits"; $midVal = "$($grade.top50_hits)/15"
     $universe = [int]$grade.universe_graded_n
 } else {
-    $mode = "LIVE / PRE-EOD"
-    $leftLabel = "Down now"; $leftVal = "$downNow/15"
-    $midLabel = "Median move"; $midVal = $medianMove
+    if ($isTargetDay) {
+        $mode = "LIVE / PRE-EOD"
+        $leftLabel = "Down now"; $leftVal = "$downNow/15"
+        $midLabel = "Median move"; $midVal = $medianMove
+    } else {
+        $mode = "FROZEN / PRE-MARKET"
+        $leftLabel = "Top-100 hits"; $leftVal = "Pending"
+        $midLabel = "Top-50 hits"; $midVal = "Pending"
+    }
     $universe = [int]$man.eligible_universe_n
 }
 
