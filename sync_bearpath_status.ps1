@@ -10,11 +10,11 @@ function H([object]$x) {
     return [System.Net.WebUtility]::HtmlEncode([string]$x)
 }
 function Pct($x) {
-    if ($null -eq $x) { return "—" }
+    if ($null -eq $x) { return "n/a" }
     try { return ('{0:+0.00;-0.00;0.00}%' -f [double]$x) } catch { return "$x" }
 }
 function Money($x) {
-    if ($null -eq $x) { return "—" }
+    if ($null -eq $x) { return "n/a" }
     try { return ('$' + ('{0:N2}' -f [double]$x)) } catch { return "$x" }
 }
 
@@ -73,7 +73,7 @@ foreach ($x in @($man.top)) {
         $move = [double]$g.target_return_pct
         $price = $ref * (1.0 + $move/100.0)
         $mr = [int]$g.market_loser_rank
-        $rankText = " · market loser #$mr"
+        $rankText = " &middot; market loser #$mr"
         if ($mr -le 50) { $tags += '<span class="tag top50">TOP 50</span>' }
         elseif ($mr -le 100) { $tags += '<span class="tag top100">TOP 100</span>' }
     } elseif ($snapshots -and ($snapshots.PSObject.Properties.Name -contains $sym)) {
@@ -103,12 +103,12 @@ foreach ($x in @($man.top)) {
     <div><span>$latestLabel</span><b>$(Money $price)</b></div>
     <div><span>Move</span><b class="$($class)Text">$(Pct $move)</b></div>
   </div>
-  <div class="why">BP score $([math]::Round([double]$x.bearpath_score,1))$rankText · $([string](H $x.why))</div>
+  <div class="why">BP score $([math]::Round([double]$x.bearpath_score,1))$rankText &middot; $([string](H $x.why))</div>
 </div>
 "@
 }
 
-$medianMove = "—"
+$medianMove = "n/a"
 if ($moves.Count -gt 0) {
     $sorted = @($moves | Sort-Object)
     $n = $sorted.Count
@@ -149,7 +149,7 @@ $now = Get-Date
 $html = @"
 <!doctype html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta http-equiv="refresh" content="60">
-<title>BearPath Live — Downside 15</title>
+<title>BearPath Live n/a Downside 15</title>
 <style>
 :root{color-scheme:dark;--bg:#070b10;--card:#101720;--line:#223144;--text:#eef5fc;--muted:#8ca0b5;--good:#37d67a;--bad:#ff5e6c;--gold:#ffd166}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#07101a,#070b10 35%);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
@@ -165,11 +165,11 @@ $html = @"
 .footer{font-size:10px;color:var(--muted);text-align:center;line-height:1.5;margin-top:18px}
 @media(max-width:750px){.grid{grid-template-columns:1fr 1fr}.stats,.track{grid-template-columns:1fr 1fr}}@media(max-width:470px){.grid{grid-template-columns:1fr}}
 </style></head><body><div class="wrap">
-<div class="hero"><div class="brand"><div><div class="logo">BEAR<em>PATH</em> LIVE</div><div class="sub">Downside 15 · target $($man.target_date) · signal close $($man.as_of)</div></div><div class="mode">$mode</div></div>
+<div class="hero"><div class="brand"><div><div class="logo">BEAR<em>PATH</em> LIVE</div><div class="sub">Downside 15 &middot; target $($man.target_date) &middot; signal close $($man.as_of)</div></div><div class="mode">$mode</div></div>
 <div class="stats"><div class="stat"><span>$leftLabel</span><b>$leftVal</b></div><div class="stat"><span>$midLabel</span><b>$midVal</b></div><div class="stat"><span>Eligible universe</span><b>$("{0:N0}" -f $universe)</b></div><div class="stat"><span>Frozen picks</span><b>15</b></div></div>$err</div>
 <div class="title">Daily Downside 15</div><div class="grid">$cards</div>
 <div class="title">Forward track record</div>$trackHtml
-<div class="footer">GREEN = stock down / BearPath hit. RED = stock up / BearPath miss.<br>Live display uses Alpaca IEX snapshots; official EOD results use the frozen full-universe grader.<br>Manifest $($man.manifest_hash.Substring(0,16))... · Published $($now.ToString("yyyy-MM-dd HH:mm:ss")) ET<br>Historical research only — not investment advice.</div>
+<div class="footer">GREEN = stock down / BearPath hit. RED = stock up / BearPath miss.<br>Live display uses Alpaca IEX snapshots; official EOD results use the frozen full-universe grader.<br>Manifest $($man.manifest_hash.Substring(0,16))... &middot; Published $($now.ToString("yyyy-MM-dd HH:mm:ss")) ET<br>Historical research only n/a not investment advice.</div>
 </div></body></html>
 "@
 
