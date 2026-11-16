@@ -5,7 +5,7 @@ $WebRoot  = $PSScriptRoot
 $PredRoot = Join-Path $BearRoot "data\predictions"
 $IndexPath = Join-Path $WebRoot "index.html"
 
-function H([object]$x) {
+function HtmlEncode([object]$x) {
     if ($null -eq $x) { return "" }
     return [System.Net.WebUtility]::HtmlEncode([string]$x)
 }
@@ -108,7 +108,7 @@ foreach ($x in @($man.top)) {
     $cards += @"
 <div class="pick $class">
   <div class="pickTop">
-    <div><span class="rank">#$($x.rank)</span> <span class="ticker">&#36;$([string](H $sym))</span>$tags</div>
+    <div><span class="rank">#$($x.rank)</span> <span class="ticker">&#36;$([string](HtmlEncode $sym))</span>$tags</div>
     <div class="verdict $class">$status</div>
   </div>
   <div class="priceRow">
@@ -116,7 +116,7 @@ foreach ($x in @($man.top)) {
     <div><span>$latestLabel</span><b>$(Money $price)</b></div>
     <div><span>Move</span><b class="$($class)Text">$(Pct $move)</b></div>
   </div>
-  <div class="why">BP score $([math]::Round([double]$x.bearpath_score,1))$rankText &middot; $([string](H $x.why))</div>
+  <div class="why">BP score $([math]::Round([double]$x.bearpath_score,1))$rankText &middot; $([string](HtmlEncode $x.why))</div>
 </div>
 "@
 }
@@ -162,7 +162,7 @@ if (Test-Path $trackPath) {
 "@
 }
 
-$err = if ($liveError -and -not $grade) { '<div class="notice">Live feed note: ' + (H $liveError) + '</div>' } else { "" }
+$err = if ($liveError -and -not $grade) { '<div class="notice">Live feed note: ' + (HtmlEncode $liveError) + '</div>' } else { "" }
 $now = Get-Date
 
 $html = @"
