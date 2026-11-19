@@ -3,6 +3,7 @@ $ErrorActionPreference = "Stop"
 $BearRoot = "C:\trading\bearpath_lab_v0_1"
 $WebRoot  = $PSScriptRoot
 $PredRoot = Join-Path $BearRoot "data\predictions"
+$MicroRoot = Join-Path $BearRoot "data\micro_predictions"
 $IndexPath = Join-Path $WebRoot "index.html"
 
 function HtmlEncode([object]$x) {
@@ -27,6 +28,27 @@ $gradePath = Join-Path $pred.FullName "grade.json"
 $man = Get-Content $manifestPath -Raw | ConvertFrom-Json
 $grade = if (Test-Path $gradePath) { Get-Content $gradePath -Raw | ConvertFrom-Json } else { $null }
 
+# Optional separate Chaos Micro research lane. It never changes the production $5+ manifest.
+$microMan = $null
+$microPred = $null
+$microTargetDate = $null
+$microFrozenET = $null
+if (Test-Path $MicroRoot) {
+    $microPred = Get-ChildItem $MicroRoot -Directory |
+        Where-Object { Test-Path (Join-Path $_.FullName "prediction_manifest.json") } |
+        Sort-Object Name | Select-Object -Last 1
+    if ($microPred) {
+        $microMan = Get-Content (Join-Path $microPred.FullName "prediction_manifest.json") -Raw | ConvertFrom-Json
+        $microTargetDate = [datetime]::ParseExact([string]$microMan.target_date, "yyyy-MM-dd", $null).Date
+        try {
+            $eastern = [TimeZoneInfo]::FindSystemTimeZoneById("Eastern Standard Time")
+            $microFrozenET = [TimeZoneInfo]::ConvertTime([DateTimeOffset]::Parse([string]$microMan.created_utc), $eastern).ToString("yyyy-MM-dd HH:mm:ss 'ET'")
+        } catch {
+            $microFrozenET = [string]$microMan.created_utc
+        }
+    }
+}
+
 $gradeMap = @{}
 if ($grade -and $grade.picks) {
     foreach ($p in @($grade.picks)) { $gradeMap[[string]$p.symbol] = $p }
@@ -43,7 +65,11 @@ if (-not $grade -and $isTargetDay) {
     $secret = if ($env:APCA_API_SECRET_KEY) { $env:APCA_API_SECRET_KEY } else { $env:APCA_API_SECRET }
     if ($key -and $secret) {
         try {
-            $symbols = (@($man.top) | ForEach-Object { [string]$_.symbol }) -join ","
+            $symbolList = @($man.top) | ForEach-Object { [string]$_.symbol }
+            if ($microMan -and $microTargetDate -eq $targetDate) {
+                $symbolList += @($microMan.top) | ForEach-Object { [string]$_.symbol }
+            }
+            $symbols = ($symbolList | Sort-Object -Unique) -join ","
             $uri = "https://data.alpaca.markets/v2/stocks/snapshots?symbols=$([uri]::EscapeDataString($symbols))&feed=iex"
             $headers = @{ "APCA-API-KEY-ID"=$key; "APCA-API-SECRET-KEY"=$secret }
             $snapshots = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers -TimeoutSec 30
@@ -121,6 +147,62 @@ foreach ($x in @($man.top)) {
 "@
 }
 
+$microHtml = ""
+if ($microMan) {
+    $microCards = ""
+    foreach ($m in @($microMan.top)) {
+        $msym = [string]$m.symbol
+        $mref = [double]$m.close
+        $mprice = $null
+        $mmove = $null
+        $mstatus = "PENDING"
+        $mclass = "flat"
+
+        if ($snapshots -and $microTargetDate -eq $targetDate -and ($snapshots.PSObject.Properties.Name -contains $msym)) {
+            $msnap = $snapshots.$msym
+            $mtradeIsToday = $false
+            if ($msnap.latestTrade -and $msnap.latestTrade.t) {
+                try {
+                    $mtradeTime = [DateTimeOffset]::Parse([string]$msnap.latestTrade.t).LocalDateTime
+                    $mtradeIsToday = ($mtradeTime.Date -eq $microTargetDate)
+                } catch { $mtradeIsToday = $false }
+            }
+            if ($mtradeIsToday -and $null -ne $msnap.latestTrade.p) { $mprice = [double]$msnap.latestTrade.p }
+            if ($null -ne $mprice -and $mref -ne 0) { $mmove = (($mprice / $mref) - 1.0) * 100.0 }
+        }
+        if ($null -ne $mmove) {
+            if ($mmove -lt 0) { $mstatus="HIT"; $mclass="hit" }
+            elseif ($mmove -gt 0) { $mstatus="MISS"; $mclass="miss" }
+            else { $mstatus="FLAT" }
+        }
+
+        $microCards += @"
+<div class="pick $mclass">
+  <div class="pickTop">
+    <div><span class="rank">#$($m.rank)</span> <span class="ticker">&#36;$([string](HtmlEncode $msym))</span></div>
+    <div class="verdict $mclass">$mstatus</div>
+  </div>
+  <div class="priceRow">
+    <div><span>Frozen</span><b>$(Money $mref)</b></div>
+    <div><span>Latest</span><b>$(Money $mprice)</b></div>
+    <div><span>Move</span><b class="$($mclass)Text">$(Pct $mmove)</b></div>
+  </div>
+  <div class="why">Micro score $([math]::Round([double]$m.micro_score,1)) &middot; $([string](HtmlEncode $m.why))</div>
+</div>
+"@
+    }
+    $microHash = if ($microMan.manifest_hash) { ([string]$microMan.manifest_hash).Substring(0,16) + "..." } else { "n/a" }
+    $microHtml = @"
+<div class="title">Chaos Micro &middot; experimental &#36;1.00-&#36;4.99 lane</div>
+<div class="microMeta">
+  <b>FROZEN / FORWARD TEST</b> &middot; target $($microMan.target_date) &middot; signal close $($microMan.as_of) &middot; $($microMan.eligible_universe_n) eligible &middot; 10 picks<br>
+  Frozen timestamp: $microFrozenET &middot; Manifest $microHash<br>
+  Separate research lane; not included in the Chaos Alpha public record.
+</div>
+<div class="grid">$microCards</div>
+"@
+}
+
 $medianMove = "n/a"
 if ($moves.Count -gt 0) {
     $sorted = @($moves | Sort-Object)
@@ -180,13 +262,14 @@ $html = @"
 .pick{padding:12px;border-left:5px solid #546273}.pick.hit{border-left-color:var(--good)}.pick.miss{border-left-color:var(--bad)}.pickTop{display:flex;justify-content:space-between;gap:8px}.rank{font-size:11px;color:var(--muted)}.ticker{font-size:20px;font-weight:900}
 .tag{font-size:8px;padding:3px 5px;border-radius:6px;background:#263546;margin-left:4px}.tag.top50{background:#17603e}.tag.top100{background:#274c7d}.verdict{font-size:10px;font-weight:900;padding:5px 7px;border-radius:7px}.verdict.hit{color:var(--good);background:#123c2b}.verdict.miss{color:var(--bad);background:#461d26}
 .priceRow{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px}.priceRow div{background:#0a1017;border-radius:8px;padding:7px}.priceRow b{display:block;font-size:12px}.hitText{color:var(--good)}.missText{color:var(--bad)}.why{font-size:10px;margin-top:9px;line-height:1.35}
-.track{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:10px}.track div{padding:7px}.track b{font-size:18px}.notice{margin-top:10px;background:#2a2111;color:#ffd98b;border:1px solid #54411c;padding:9px;border-radius:9px;font-size:11px}
+.track{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:10px}.track div{padding:7px}.track b{font-size:18px}.notice{margin-top:10px;background:#2a2111;color:#ffd98b;border:1px solid #54411c;padding:9px;border-radius:9px;font-size:11px}.microMeta{margin-bottom:9px;background:#101720;border:1px solid #3a3150;border-radius:12px;padding:10px;color:#b9a9cf;font-size:11px;line-height:1.55}.microMeta b{color:#d7b8ff}
 .footer{font-size:10px;color:var(--muted);text-align:center;line-height:1.5;margin-top:18px}
 @media(max-width:750px){.grid{grid-template-columns:1fr 1fr}.stats,.track{grid-template-columns:1fr 1fr}}@media(max-width:470px){.grid{grid-template-columns:1fr}}
 </style></head><body><div class="wrap">
 <div class="hero"><div class="brand"><div><div class="logo">BEAR<em>PATH</em> LIVE</div><div class="sub">Downside 15 &middot; target $($man.target_date) &middot; signal close $($man.as_of)</div></div><div class="mode">$mode</div></div>
 <div class="stats"><div class="stat"><span>$leftLabel</span><b>$leftVal</b></div><div class="stat"><span>$midLabel</span><b>$midVal</b></div><div class="stat"><span>Eligible universe</span><b>$("{0:N0}" -f $universe)</b></div><div class="stat"><span>Frozen picks</span><b>15</b></div></div>$err</div>
 <div class="title">Daily Downside 15</div><div class="grid">$cards</div>
+$microHtml
 <div class="title">Forward track record</div>$trackHtml
 <div class="footer">GREEN = stock down / BearPath hit. RED = stock up / BearPath miss.<br>Live display uses Alpaca IEX snapshots; official EOD results use the frozen full-universe grader.<br>Manifest $($man.manifest_hash.Substring(0,16))... &middot; Published $($now.ToString("yyyy-MM-dd HH:mm:ss")) ET<br>Historical research only n/a not investment advice.</div>
 </div></body></html>
