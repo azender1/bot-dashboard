@@ -4,7 +4,7 @@ $BearRoot = "C:\trading\bearpath_lab_v0_1"
 $WebRoot  = $PSScriptRoot
 $PredRoot = Join-Path $BearRoot "data\predictions"
 $MicroRoot = Join-Path $BearRoot "data\micro_predictions"
-$IndexPath = Join-Path $WebRoot "index.html"
+$IndexPath = Join-Path $WebRoot "index.html"\n$RiskExportScript = Join-Path $BearRoot "scripts\\bearpath_risk_check_export.py"\n$RiskDataSource = Join-Path $BearRoot "data\\public\\risk_scores.json"\n$RiskDataWeb = Join-Path $WebRoot "risk_scores.json"
 
 function HtmlEncode([object]$x) {
     if ($null -eq $x) { return "" }
@@ -27,6 +27,21 @@ $manifestPath = Join-Path $pred.FullName "prediction_manifest.json"
 $gradePath = Join-Path $pred.FullName "grade.json"
 $man = Get-Content $manifestPath -Raw | ConvertFrom-Json
 $grade = if (Test-Path $gradePath) { Get-Content $gradePath -Raw | ConvertFrom-Json } else { $null }
+
+# Build the public Tomorrow Risk Check dataset from the exact frozen session.
+# This is a fail-closed health gate: any reconciliation failure stops publication.
+if (-not (Test-Path $RiskExportScript)) { throw "Risk Check exporter missing: $RiskExportScript" }
+$Python = Join-Path $BearRoot ".venv\Scripts\python.exe"
+if (-not (Test-Path $Python)) { throw "BearPath Python missing: $Python" }
+Push-Location $BearRoot
+try {
+    & $Python $RiskExportScript --target-date ([string]$man.target_date)
+    if ($LASTEXITCODE -ne 0) { throw "Risk Check exporter failed with exit code $LASTEXITCODE" }
+} finally {
+    Pop-Location
+}
+if (-not (Test-Path $RiskDataSource)) { throw "Risk Check export missing after successful exporter run: $RiskDataSource" }
+Copy-Item $RiskDataSource $RiskDataWeb -Force
 
 # Optional separate Chaos Micro research lane. It never changes the production $5+ manifest.
 $microMan = $null
@@ -256,7 +271,7 @@ $html = @"
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#07101a,#070b10 35%);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
 .wrap{max-width:1050px;margin:auto;padding:18px 12px 40px}.hero,.pick,.track{background:var(--card);border:1px solid var(--line);border-radius:16px}.hero{padding:17px}
 .brand{display:flex;justify-content:space-between;gap:12px}.logo{font-size:28px;font-weight:900}.logo em{color:var(--bad);font-style:normal}.sub,.why{color:var(--muted)}
-.sub{font-size:12px;margin-top:4px}.mode{font-size:11px;font-weight:900;color:var(--gold);background:#202a36;padding:7px 10px;border-radius:999px}
+.sub{font-size:12px;margin-top:4px}.mode{font-size:11px;font-weight:900;color:var(--gold);background:#202a36;padding:7px 10px;border-radius:999px}.riskCta{display:inline-block;margin-top:12px;padding:10px 13px;border-radius:10px;background:#7f2530;color:white;text-decoration:none;font-size:12px;font-weight:900}
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}.stat{background:#0b1118;border:1px solid var(--line);border-radius:12px;padding:10px}.stat span,.priceRow span,.track span{display:block;color:var(--muted);font-size:9px;text-transform:uppercase}.stat b{font-size:22px}
 .title{margin:16px 3px 8px;color:var(--muted);font-size:11px;text-transform:uppercase;font-weight:800;letter-spacing:.7px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
 .pick{padding:12px;border-left:5px solid #546273}.pick.hit{border-left-color:var(--good)}.pick.miss{border-left-color:var(--bad)}.pickTop{display:flex;justify-content:space-between;gap:8px}.rank{font-size:11px;color:var(--muted)}.ticker{font-size:20px;font-weight:900}
@@ -267,7 +282,7 @@ $html = @"
 @media(max-width:750px){.grid{grid-template-columns:1fr 1fr}.stats,.track{grid-template-columns:1fr 1fr}}@media(max-width:470px){.grid{grid-template-columns:1fr}}
 </style></head><body><div class="wrap">
 <div class="hero"><div class="brand"><div><div class="logo">BEAR<em>PATH</em> LIVE</div><div class="sub">Downside 15 &middot; target $($man.target_date) &middot; signal close $($man.as_of)</div></div><div class="mode">$mode</div></div>
-<div class="stats"><div class="stat"><span>$leftLabel</span><b>$leftVal</b></div><div class="stat"><span>$midLabel</span><b>$midVal</b></div><div class="stat"><span>Eligible universe</span><b>$("{0:N0}" -f $universe)</b></div><div class="stat"><span>Frozen picks</span><b>15</b></div></div>$err</div>
+<div class="stats"><div class="stat"><span>$leftLabel</span><b>$leftVal</b></div><div class="stat"><span>$midLabel</span><b>$midVal</b></div><div class="stat"><span>Eligible universe</span><b>$("{0:N0}" -f $universe)</b></div><div class="stat"><span>Frozen picks</span><b>15</b></div></div><a class="riskCta" href="./risk-check.html">CHECK YOUR STOCK →</a>$err</div>
 <div class="title">Daily Downside 15</div><div class="grid">$cards</div>
 $microHtml
 <div class="title">Forward track record</div>$trackHtml
@@ -277,7 +292,7 @@ $microHtml
 
 $html | Set-Content $IndexPath -Encoding UTF8
 Set-Location $WebRoot
-git add index.html
+git add index.html risk_scores.json risk-check.html
 git diff --cached --quiet
 if ($LASTEXITCODE -eq 0) { exit 0 }
 git commit -m "Update BearPath Live $($now.ToString('yyyy-MM-dd HH:mm'))" | Out-Host
