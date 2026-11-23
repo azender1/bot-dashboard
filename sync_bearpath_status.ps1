@@ -4,7 +4,10 @@ $BearRoot = "C:\trading\bearpath_lab_v0_1"
 $WebRoot  = $PSScriptRoot
 $PredRoot = Join-Path $BearRoot "data\predictions"
 $MicroRoot = Join-Path $BearRoot "data\micro_predictions"
-$IndexPath = Join-Path $WebRoot "index.html"\n$RiskExportScript = Join-Path $BearRoot "scripts\\bearpath_risk_check_export.py"\n$RiskDataSource = Join-Path $BearRoot "data\\public\\risk_scores.json"\n$RiskDataWeb = Join-Path $WebRoot "risk_scores.json"
+$IndexPath = Join-Path $WebRoot "index.html"
+$RiskExportScript = Join-Path $BearRoot "scripts\bearpath_risk_check_export.py"
+$RiskDataSource = Join-Path $BearRoot "data\public\risk_scores.json"
+$RiskDataWeb = Join-Path $WebRoot "risk_scores.json"
 
 function HtmlEncode([object]$x) {
     if ($null -eq $x) { return "" }
