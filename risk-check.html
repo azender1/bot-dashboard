@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>BearPath Tomorrow Risk Check</title>
+<style>
+:root{color-scheme:dark;--bg:#070b10;--card:#101720;--line:#223144;--text:#eef5fc;--muted:#8ca0b5;--good:#37d67a;--bad:#ff5e6c;--gold:#ffd166;--purple:#c9a7ff}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#07101a,#070b10 35%);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+.wrap{max-width:860px;margin:auto;padding:24px 14px 50px}.hero,.result,.evidence{background:var(--card);border:1px solid var(--line);border-radius:18px}
+.hero{padding:22px}.brand{font-size:30px;font-weight:900}.brand em{font-style:normal;color:var(--bad)}.kicker{color:var(--gold);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
+h1{font-size:34px;line-height:1.05;margin:8px 0 10px}.sub{color:var(--muted);line-height:1.5;font-size:14px}
+.search{display:flex;gap:8px;margin-top:18px}.search input{flex:1;background:#0a1017;border:1px solid var(--line);color:var(--text);border-radius:12px;padding:14px 16px;font-size:18px;text-transform:uppercase}
+.search button,.back{border:0;border-radius:12px;padding:0 18px;font-weight:900;background:var(--bad);color:white;cursor:pointer}.back{display:inline-block;text-decoration:none;padding:10px 14px;background:#192533;margin-top:14px}
+.status{margin-top:12px;font-size:12px;color:var(--muted)}.result{display:none;margin-top:14px;padding:18px}.topline{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.ticker{font-size:32px;font-weight:900}.bucket{font-size:11px;font-weight:900;border-radius:999px;padding:7px 10px;background:#202a36;color:var(--gold)}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:14px}.metric{background:#0a1017;border-radius:12px;padding:12px}.metric span{display:block;color:var(--muted);font-size:10px;text-transform:uppercase}.metric b{display:block;font-size:23px;margin-top:4px}
+.d15{margin-top:12px;padding:10px;border-radius:10px;font-weight:900}.d15.yes{background:#451b25;color:#ff8994}.d15.no{background:#10291d;color:#69df9b}.drivers{margin-top:15px}.drivers h3,.evidence h3{font-size:12px;text-transform:uppercase;color:var(--muted);letter-spacing:.06em}.drivers ul{padding-left:20px;line-height:1.65}
+.evidence{margin-top:14px;padding:18px}.meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;color:var(--muted)}code{word-break:break-all;color:#c7d7e8}.warn{margin-top:12px;color:#ffd98b;background:#2a2111;border:1px solid #54411c;border-radius:10px;padding:10px;font-size:12px;line-height:1.45}.footer{text-align:center;color:var(--muted);font-size:11px;line-height:1.5;margin-top:20px}
+@media(max-width:650px){h1{font-size:28px}.metrics{grid-template-columns:1fr}.meta{grid-template-columns:1fr}.search{flex-direction:column}.search button{padding:13px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <div class="kicker">Experimental public forward test</div>
+    <div class="brand">BEAR<em>PATH</em></div>
+    <h1>Tomorrow Risk Check</h1>
+    <div class="sub">Enter a U.S. stock ticker to see where it ranks for next-session downside risk versus BearPath's frozen eligible universe. This is a relative ranking, not a probability and not a recommendation to buy or sell.</div>
+    <div class="search">
+      <input id="tickerInput" maxlength="10" placeholder="NVDA" autocomplete="off">
+      <button id="checkBtn">CHECK</button>
+    </div>
+    <div id="status" class="status">Loading tonight's frozen scores…</div>
+    <a class="back" href="./">View BearPath public scorecard</a>
+  </div>
+
+  <div id="result" class="result">
+    <div class="topline">
+      <div>
+        <div id="ticker" class="ticker"></div>
+        <div id="rankline" class="sub"></div>
+      </div>
+      <div id="bucket" class="bucket"></div>
+    </div>
+    <div class="metrics">
+      <div class="metric"><span>Downside-risk percentile</span><b id="riskPct"></b></div>
+      <div class="metric"><span>Similar-volatility percentile</span><b id="volPct"></b></div>
+      <div class="metric"><span>Volatility tier</span><b id="volTier"></b></div>
+    </div>
+    <div id="d15" class="d15"></div>
+    <div class="drivers">
+      <h3>Model drivers</h3>
+      <ul id="drivers"></ul>
+    </div>
+  </div>
+
+  <div class="evidence">
+    <h3>Frozen evidence</h3>
+    <div id="meta" class="meta"></div>
+    <div class="warn">BearPath ranks stocks relative to the same frozen nightly universe. Higher percentile means higher model-implied next-session downside risk. Similar-volatility percentile compares the ticker only with stocks in the same nightly ATR20 volatility decile.</div>
+  </div>
+
+  <div class="footer">Historical research only — not investment advice. No personalized portfolio recommendation is provided.</div>
+</div>
+<script>
+let payload=null, bySymbol=new Map();
+const labels={DOWNSIDE_15:"DOWNSIDE 15",TOP_2:"TOP 2% RISK",TOP_10:"TOP 10% RISK",MIDDLE_80:"MIDDLE 80%",BOTTOM_10:"BOTTOM 10% RISK"};
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));}
+function renderMeta(){
+  const h=payload.health_gate||{};
+  document.getElementById("meta").innerHTML=
+    "<div><b>Target session</b><br>"+esc(payload.target_date)+"</div>"+
+    "<div><b>Signal close</b><br>"+esc(payload.signal_date)+"</div>"+
+    "<div><b>Eligible universe</b><br>"+Number(payload.eligible_universe_n).toLocaleString()+" stocks</div>"+
+    "<div><b>Health gate</b><br>"+esc(h.status)+"</div>"+
+    "<div><b>Manifest</b><br><code>"+esc((payload.manifest_hash||"").slice(0,18))+"…</code></div>"+
+    "<div><b>Dataset</b><br><code>"+esc((payload.dataset_hash||"").slice(0,18))+"…</code></div>";
+}
+function check(){
+  if(!payload)return;
+  const s=document.getElementById("tickerInput").value.trim().toUpperCase();
+  const r=bySymbol.get(s);
+  const box=document.getElementById("result");
+  box.style.display="block";
+  if(!r){
+    document.getElementById("ticker").textContent=s||"—";
+    document.getElementById("rankline").textContent="Not in tonight's BearPath eligible universe.";
+    document.getElementById("bucket").textContent="NOT ELIGIBLE";
+    document.getElementById("riskPct").textContent="—";
+    document.getElementById("volPct").textContent="—";
+    document.getElementById("volTier").textContent="—";
+    document.getElementById("d15").className="d15 no";
+    document.getElementById("d15").textContent="No BearPath score is published for this ticker tonight.";
+    document.getElementById("drivers").innerHTML="";
+    return;
+  }
+  document.getElementById("ticker").textContent="$"+r.symbol;
+  document.getElementById("rankline").textContent="BearPath rank #"+r.rank+" of "+Number(r.universe_n).toLocaleString();
+  document.getElementById("bucket").textContent=labels[r.bucket]||r.bucket;
+  document.getElementById("riskPct").textContent=Number(r.risk_percentile).toFixed(1)+"%";
+  document.getElementById("volPct").textContent=Number(r.similar_vol_risk_percentile).toFixed(1)+"%";
+  document.getElementById("volTier").textContent="Decile "+r.volatility_decile;
+  const d=document.getElementById("d15");
+  d.className="d15 "+(r.downside15?"yes":"no");
+  d.textContent=r.downside15?"YES — this ticker is in tonight's frozen BearPath Downside 15.":"No — this ticker is not in tonight's Downside 15.";
+  document.getElementById("drivers").innerHTML=(r.drivers||[]).map(x=>"<li>"+esc(x)+"</li>").join("");
+}
+fetch("./risk_scores.json?ts="+Date.now()).then(r=>{if(!r.ok)throw new Error("risk_scores.json unavailable");return r.json();}).then(j=>{
+  payload=j;
+  bySymbol=new Map(j.rows.map(r=>[r.symbol,r]));
+  document.getElementById("status").textContent="Ready — "+Number(j.eligible_universe_n).toLocaleString()+" frozen scores for "+j.target_date+".";
+  renderMeta();
+}).catch(e=>{
+  document.getElementById("status").textContent="Risk Check is temporarily unavailable: "+e.message;
+});
+document.getElementById("checkBtn").addEventListener("click",check);
+document.getElementById("tickerInput").addEventListener("keydown",e=>{if(e.key==="Enter")check();});
+</script>
+</body>
+</html>
