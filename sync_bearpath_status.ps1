@@ -274,7 +274,7 @@ $html = @"
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#07101a,#070b10 35%);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
 .wrap{max-width:1050px;margin:auto;padding:18px 12px 40px}.hero,.pick,.track{background:var(--card);border:1px solid var(--line);border-radius:16px}.hero{padding:17px}
 .brand{display:flex;justify-content:space-between;gap:12px}.logo{font-size:28px;font-weight:900}.logo em{color:var(--bad);font-style:normal}.sub,.why{color:var(--muted)}
-.sub{font-size:12px;margin-top:4px}.mode{font-size:11px;font-weight:900;color:var(--gold);background:#202a36;padding:7px 10px;border-radius:999px}.riskCta{display:inline-block;margin-top:12px;padding:10px 13px;border-radius:10px;background:#7f2530;color:white;text-decoration:none;font-size:12px;font-weight:900}
+.sub{font-size:12px;margin-top:4px}.mode{font-size:11px;font-weight:900;color:var(--gold);background:#202a36;padding:7px 10px;border-radius:999px}.riskCta{display:inline-block;margin-top:12px;padding:10px 13px;border-radius:10px;background:#7f2530;color:white;text-decoration:none;font-size:12px;font-weight:900}.launchCounters{display:inline-block;margin-left:10px;color:var(--muted);font-size:10px}.launchCounters b{color:var(--text)}
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}.stat{background:#0b1118;border:1px solid var(--line);border-radius:12px;padding:10px}.stat span,.priceRow span,.track span{display:block;color:var(--muted);font-size:9px;text-transform:uppercase}.stat b{font-size:22px}
 .title{margin:16px 3px 8px;color:var(--muted);font-size:11px;text-transform:uppercase;font-weight:800;letter-spacing:.7px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
 .pick{padding:12px;border-left:5px solid #546273}.pick.hit{border-left-color:var(--good)}.pick.miss{border-left-color:var(--bad)}.pickTop{display:flex;justify-content:space-between;gap:8px}.rank{font-size:11px;color:var(--muted)}.ticker{font-size:20px;font-weight:900}
@@ -285,12 +285,31 @@ $html = @"
 @media(max-width:750px){.grid{grid-template-columns:1fr 1fr}.stats,.track{grid-template-columns:1fr 1fr}}@media(max-width:470px){.grid{grid-template-columns:1fr}}
 </style></head><body><div class="wrap">
 <div class="hero"><div class="brand"><div><div class="logo">BEAR<em>PATH</em> LIVE</div><div class="sub">Downside 15 &middot; target $($man.target_date) &middot; signal close $($man.as_of)</div></div><div class="mode">$mode</div></div>
-<div class="stats"><div class="stat"><span>$leftLabel</span><b>$leftVal</b></div><div class="stat"><span>$midLabel</span><b>$midVal</b></div><div class="stat"><span>Universe graded</span><b>$("{0:N0}" -f $universe)</b></div><div class="stat"><span>$(if ($grade) { "Top-50 losers" } else { "Frozen picks" })</span><b>$(if ($grade) { "$($grade.top50_hits)/15" } else { "15" })</b></div></div><a class="riskCta" href="./risk-check.html">CHECK YOUR STOCK →</a>$err</div>
+<div class="stats"><div class="stat"><span>$leftLabel</span><b>$leftVal</b></div><div class="stat"><span>$midLabel</span><b>$midVal</b></div><div class="stat"><span>Universe graded</span><b>$("{0:N0}" -f $universe)</b></div><div class="stat"><span>$(if ($grade) { "Top-50 losers" } else { "Frozen picks" })</span><b>$(if ($grade) { "$($grade.top50_hits)/15" } else { "15" })</b></div></div><a id="riskCheckCta" class="riskCta" href="./risk-check.html">CHECK YOUR STOCK →</a><span class="launchCounters">Dashboard views <b id="dashboardViews">—</b> &middot; Risk Check clicks <b id="riskClicks">—</b></span>$err</div>
 <div class="title">Daily Downside 15</div><div class="grid">$cards</div>
 $microHtml
 <div class="title">Forward track record</div>$trackHtml
 <div class="footer">GREEN = stock down / BearPath hit. RED = stock up / BearPath miss.<br>Live/Micro display uses Alpaca delayed-SIP snapshots; official BearPath EOD results use the frozen full-universe grader.<br>Manifest $($man.manifest_hash.Substring(0,16))... &middot; Published $($now.ToString("yyyy-MM-dd HH:mm:ss")) ET<br>Historical research only n/a not investment advice.</div>
-</div></body></html>
+</div>
+<script>
+(function(){
+  const base="https://countapi.mileshilliard.com/api/v1";
+  const viewKey="bearpath_dashboard_views_20261123";
+  const clickKey="bearpath_riskcheck_clicks_20261123";
+  const viewEl=document.getElementById("dashboardViews");
+  const clickEl=document.getElementById("riskClicks");
+  function show(el,v){ if(el && v!==undefined && v!==null) el.textContent=String(v); }
+  fetch(base+"/hit/"+viewKey).then(r=>r.json()).then(j=>show(viewEl,j.value)).catch(()=>show(viewEl,"n/a"));
+  fetch(base+"/get/"+clickKey).then(r=>r.ok?r.json():null).then(j=>show(clickEl,j?j.value:0)).catch(()=>show(clickEl,"n/a"));
+  const cta=document.getElementById("riskCheckCta");
+  if(cta){
+    cta.addEventListener("click",function(){
+      try{ navigator.sendBeacon(base+"/hit/"+clickKey); }
+      catch(e){ fetch(base+"/hit/"+clickKey,{keepalive:true}).catch(()=>{}); }
+    });
+  }
+})();
+</script></body></html>
 "@
 
 $html | Set-Content $IndexPath -Encoding UTF8
