@@ -78,7 +78,7 @@ $targetDate = [datetime]::ParseExact([string]$man.target_date, "yyyy-MM-dd", $nu
 $todayLocal = (Get-Date).Date
 $isTargetDay = ($todayLocal -eq $targetDate)
 
-if (-not $grade -and $isTargetDay) {
+if ($isTargetDay -and ((-not $grade) -or $microMan)) {
     $key = $env:APCA_API_KEY_ID
     $secret = if ($env:APCA_API_SECRET_KEY) { $env:APCA_API_SECRET_KEY } else { $env:APCA_API_SECRET }
     if ($key -and $secret) {
@@ -88,7 +88,7 @@ if (-not $grade -and $isTargetDay) {
                 $symbolList += @($microMan.top) | ForEach-Object { [string]$_.symbol }
             }
             $symbols = ($symbolList | Sort-Object -Unique) -join ","
-            $uri = "https://data.alpaca.markets/v2/stocks/snapshots?symbols=$([uri]::EscapeDataString($symbols))&feed=iex"
+            $uri = "https://data.alpaca.markets/v2/stocks/snapshots?symbols=$([uri]::EscapeDataString($symbols))&feed=delayed_sip"
             $headers = @{ "APCA-API-KEY-ID"=$key; "APCA-API-SECRET-KEY"=$secret }
             $snapshots = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers -TimeoutSec 30
         } catch {
@@ -178,14 +178,14 @@ if ($microMan) {
 
         if ($snapshots -and $microTargetDate -eq $targetDate -and ($snapshots.PSObject.Properties.Name -contains $msym)) {
             $msnap = $snapshots.$msym
-            $mtradeIsToday = $false
-            if ($msnap.latestTrade -and $msnap.latestTrade.t) {
+            $mbarIsToday = $false
+            if ($msnap.dailyBar -and $msnap.dailyBar.t) {
                 try {
-                    $mtradeTime = [DateTimeOffset]::Parse([string]$msnap.latestTrade.t).LocalDateTime
-                    $mtradeIsToday = ($mtradeTime.Date -eq $microTargetDate)
-                } catch { $mtradeIsToday = $false }
+                    $mbarTime = [DateTimeOffset]::Parse([string]$msnap.dailyBar.t).LocalDateTime
+                    $mbarIsToday = ($mbarTime.Date -eq $microTargetDate)
+                } catch { $mbarIsToday = $false }
             }
-            if ($mtradeIsToday -and $null -ne $msnap.latestTrade.p) { $mprice = [double]$msnap.latestTrade.p }
+            if ($mbarIsToday -and $null -ne $msnap.dailyBar.c) { $mprice = [double]$msnap.dailyBar.c }
             if ($null -ne $mprice -and $mref -ne 0) { $mmove = (($mprice / $mref) - 1.0) * 100.0 }
         }
         if ($null -ne $mmove) {
@@ -202,7 +202,7 @@ if ($microMan) {
   </div>
   <div class="priceRow">
     <div><span>Frozen</span><b>$(Money $mref)</b></div>
-    <div><span>Latest</span><b>$(Money $mprice)</b></div>
+    <div><span>$(if ($grade) { "Final" } else { "Latest" })</span><b>$(Money $mprice)</b></div>
     <div><span>Move</span><b class="$($mclass)Text">$(Pct $mmove)</b></div>
   </div>
   <div class="why">Micro score $([math]::Round([double]$m.micro_score,1)) &middot; $([string](HtmlEncode $m.why))</div>
@@ -232,8 +232,8 @@ if ($moves.Count -gt 0) {
 
 if ($grade) {
     $mode = "OFFICIAL EOD"
-    $leftLabel = "Top-100 hits"; $leftVal = "$($grade.top100_hits)/15"
-    $midLabel = "Top-50 hits"; $midVal = "$($grade.top50_hits)/15"
+    $leftLabel = "Picks down"; $leftVal = "$($grade.picks_down_n)/15"
+    $midLabel = "Top-100 losers"; $midVal = "$($grade.top100_hits)/15"
     $universe = [int]$grade.universe_graded_n
 } else {
     if ($isTargetDay) {
@@ -285,11 +285,11 @@ $html = @"
 @media(max-width:750px){.grid{grid-template-columns:1fr 1fr}.stats,.track{grid-template-columns:1fr 1fr}}@media(max-width:470px){.grid{grid-template-columns:1fr}}
 </style></head><body><div class="wrap">
 <div class="hero"><div class="brand"><div><div class="logo">BEAR<em>PATH</em> LIVE</div><div class="sub">Downside 15 &middot; target $($man.target_date) &middot; signal close $($man.as_of)</div></div><div class="mode">$mode</div></div>
-<div class="stats"><div class="stat"><span>$leftLabel</span><b>$leftVal</b></div><div class="stat"><span>$midLabel</span><b>$midVal</b></div><div class="stat"><span>Eligible universe</span><b>$("{0:N0}" -f $universe)</b></div><div class="stat"><span>Frozen picks</span><b>15</b></div></div><a class="riskCta" href="./risk-check.html">CHECK YOUR STOCK →</a>$err</div>
+<div class="stats"><div class="stat"><span>$leftLabel</span><b>$leftVal</b></div><div class="stat"><span>$midLabel</span><b>$midVal</b></div><div class="stat"><span>Universe graded</span><b>$("{0:N0}" -f $universe)</b></div><div class="stat"><span>$(if ($grade) { "Top-50 losers" } else { "Frozen picks" })</span><b>$(if ($grade) { "$($grade.top50_hits)/15" } else { "15" })</b></div></div><a class="riskCta" href="./risk-check.html">CHECK YOUR STOCK →</a>$err</div>
 <div class="title">Daily Downside 15</div><div class="grid">$cards</div>
 $microHtml
 <div class="title">Forward track record</div>$trackHtml
-<div class="footer">GREEN = stock down / BearPath hit. RED = stock up / BearPath miss.<br>Live display uses Alpaca IEX snapshots; official EOD results use the frozen full-universe grader.<br>Manifest $($man.manifest_hash.Substring(0,16))... &middot; Published $($now.ToString("yyyy-MM-dd HH:mm:ss")) ET<br>Historical research only n/a not investment advice.</div>
+<div class="footer">GREEN = stock down / BearPath hit. RED = stock up / BearPath miss.<br>Live/Micro display uses Alpaca delayed-SIP snapshots; official BearPath EOD results use the frozen full-universe grader.<br>Manifest $($man.manifest_hash.Substring(0,16))... &middot; Published $($now.ToString("yyyy-MM-dd HH:mm:ss")) ET<br>Historical research only n/a not investment advice.</div>
 </div></body></html>
 "@
 
