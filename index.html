@@ -12,7 +12,7 @@
 .pick{padding:12px;border-left:5px solid #546273}.pick.hit{border-left-color:var(--good)}.pick.miss{border-left-color:var(--bad)}.pickTop{display:flex;justify-content:space-between;gap:8px}.rank{font-size:11px;color:var(--muted)}.ticker{font-size:20px;font-weight:900}
 .tag{font-size:8px;padding:3px 5px;border-radius:6px;background:#263546;margin-left:4px}.tag.top50{background:#17603e}.tag.top100{background:#274c7d}.verdict{font-size:10px;font-weight:900;padding:5px 7px;border-radius:7px}.verdict.hit{color:var(--good);background:#123c2b}.verdict.miss{color:var(--bad);background:#461d26}
 .priceRow{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px}.priceRow div{background:#0a1017;border-radius:8px;padding:7px}.priceRow b{display:block;font-size:12px}.hitText{color:var(--good)}.missText{color:var(--bad)}.why{font-size:10px;margin-top:9px;line-height:1.35}
-.track{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:10px}.track div{padding:7px}.track b{font-size:18px}.notice{margin-top:10px;background:#2a2111;color:#ffd98b;border:1px solid #54411c;padding:9px;border-radius:9px;font-size:11px}.microMeta{margin-bottom:9px;background:#101720;border:1px solid #3a3150;border-radius:12px;padding:10px;color:#b9a9cf;font-size:11px;line-height:1.55}.microMeta b{color:#d7b8ff}
+.track{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:10px}.track div{padding:7px}.track b{font-size:18px}.historyWrap{margin-top:10px;overflow-x:auto}.history{width:100%;border-collapse:collapse;background:#0b1118;border:1px solid var(--line);font-size:10px}.history th,.history td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}.history th:first-child,.history td:first-child{text-align:left}.history th{color:var(--muted);text-transform:uppercase;font-size:8px}.historyNote{margin-top:5px;color:var(--muted);font-size:9px}.notice{margin-top:10px;background:#2a2111;color:#ffd98b;border:1px solid #54411c;padding:9px;border-radius:9px;font-size:11px}.microMeta{margin-bottom:9px;background:#101720;border:1px solid #3a3150;border-radius:12px;padding:10px;color:#b9a9cf;font-size:11px;line-height:1.55}.microMeta b{color:#d7b8ff}
 .footer{font-size:10px;color:var(--muted);text-align:center;line-height:1.5;margin-top:18px}
 @media(max-width:750px){.grid{grid-template-columns:1fr 1fr}.stats,.track{grid-template-columns:1fr 1fr}}@media(max-width:470px){.grid{grid-template-columns:1fr}}
 </style></head><body><div class="wrap">
@@ -302,12 +302,16 @@
   <div class="why">Micro score 67.8 &middot; intraday fade, weak close, 5d momentum</div>
 </div></div>
 <div class="title">Forward track record</div><div class="track">
-<div><span>Days graded</span><b>3</b></div>
+<div><span>Forward sessions</span><b>3</b></div>
+<div><span>Top-50 hits</span><b>12</b></div>
 <div><span>Top-100 hits</span><b>18</b></div>
-<div><span>Top-100 lift</span><b>12.008x</b></div>
-<div><span>Picks down</span><b>60.0%</b></div>
+<div><span>Picks down</span><b>/45 (60.0%)</b></div>
 </div>
-<div class="footer">GREEN = stock down / BearPath hit. RED = stock up / BearPath miss.<br>Live/Micro display uses Alpaca delayed-SIP snapshots; official BearPath EOD results use the frozen full-universe grader.<br>Manifest 3b90ae107324e323... &middot; Published 2026-11-25 17:22:46 ET<br>Historical research only n/a not investment advice.</div>
+<div class="historyWrap"><table class="history">
+<thead><tr><th>Session</th><th>BP down</th><th>Top-50</th><th>Top-100</th><th>Universe down</th><th>Universe up</th><th>BP mean</th><th>Universe mean</th></tr></thead>
+<tbody></tbody>
+</table><div class="historyNote">~ = approximate historical universe context where exact cached bars are unavailable.</div></div>
+<div class="footer">GREEN = stock down / BearPath hit. RED = stock up / BearPath miss.<br>Live/Micro display uses Alpaca delayed-SIP snapshots; official BearPath EOD results use the frozen full-universe grader.<br>Manifest 3b90ae107324e323... &middot; Published 2026-11-25 17:40:20 ET<br>Historical research only n/a not investment advice.</div>
 </div>
 <script>
 (function(){
