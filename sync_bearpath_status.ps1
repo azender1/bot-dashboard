@@ -1,3 +1,5 @@
+param([switch]$NoGit)
+
 $ErrorActionPreference = "Stop"
 
 $BearRoot = "C:\trading\bearpath_lab_v0_1"
@@ -313,8 +315,10 @@ $microHtml
 "@
 
 $html | Set-Content $IndexPath -Encoding UTF8
+if ($NoGit) { exit 0 }
+
 Set-Location $WebRoot
-git add index.html risk_scores.json risk-check.html
+git add -- index.html risk_scores.json risk-check.html
 git diff --cached --quiet
 if ($LASTEXITCODE -eq 0) { exit 0 }
 git commit -m "Update BearPath Live $($now.ToString('yyyy-MM-dd HH:mm'))" | Out-Host
