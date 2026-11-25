@@ -250,17 +250,32 @@ if ($grade) {
     $universe = [int]$man.eligible_universe_n
 }
 
-$trackHtml = '<div class="notice">Forward track record begins after the first official EOD grade.</div>'
+$trackHtml = '<div class="notice">Forward track record unavailable.</div>'
 $trackPath = Join-Path $BearRoot "data\public\track_record.json"
 if (Test-Path $trackPath) {
     $tr = Get-Content $trackPath -Raw | ConvertFrom-Json
+    $rowsHtml = ""
+    if ($tr.sessions) {
+        foreach ($s in @($tr.sessions)) {
+            $approx = if ($s.universe_context_approx) { "~" } else { "" }
+            $uDown = if ($null -ne $s.universe_down_pct) { $approx + (Pct $s.universe_down_pct) } else { "n/a" }
+            $uUp = if ($null -ne $s.universe_up_pct) { $approx + (Pct $s.universe_up_pct) } else { "n/a" }
+            $bpMean = if ($null -ne $s.mean_pick_return_pct) { Pct $s.mean_pick_return_pct } else { "n/a" }
+            $uMean = if ($null -ne $s.universe_mean_return_pct) { Pct $s.universe_mean_return_pct } else { "n/a" }
+            $rowsHtml += "<tr><td>$($s.target_date)</td><td>$($s.picks_down_n)/$($s.picks_graded_n) ($([math]::Round([double]$s.picks_down_pct,1))%)</td><td>$($s.top50_hits)</td><td>$($s.top100_hits)</td><td>$uDown</td><td>$uUp</td><td>$bpMean</td><td>$uMean</td></tr>"
+        }
+    }
     $trackHtml = @"
 <div class="track">
-<div><span>Days graded</span><b>$($tr.days)</b></div>
+<div><span>Forward sessions</span><b>$($tr.days)</b></div>
+<div><span>Top-50 hits</span><b>$($tr.top50_hits)</b></div>
 <div><span>Top-100 hits</span><b>$($tr.top100_hits)</b></div>
-<div><span>Top-100 lift</span><b>$($tr.top100_lift_vs_random)x</b></div>
-<div><span>Picks down</span><b>$($tr.picks_down_pct)%</b></div>
+<div><span>Picks down</span><b>$($tr.picks_down_n)/$($tr.total_picks) ($($tr.picks_down_pct)%)</b></div>
 </div>
+<div class="historyWrap"><table class="history">
+<thead><tr><th>Session</th><th>BP down</th><th>Top-50</th><th>Top-100</th><th>Universe down</th><th>Universe up</th><th>BP mean</th><th>Universe mean</th></tr></thead>
+<tbody>$rowsHtml</tbody>
+</table><div class="historyNote">~ = approximate historical universe context where exact cached bars are unavailable.</div></div>
 "@
 }
 
@@ -282,7 +297,7 @@ $html = @"
 .pick{padding:12px;border-left:5px solid #546273}.pick.hit{border-left-color:var(--good)}.pick.miss{border-left-color:var(--bad)}.pickTop{display:flex;justify-content:space-between;gap:8px}.rank{font-size:11px;color:var(--muted)}.ticker{font-size:20px;font-weight:900}
 .tag{font-size:8px;padding:3px 5px;border-radius:6px;background:#263546;margin-left:4px}.tag.top50{background:#17603e}.tag.top100{background:#274c7d}.verdict{font-size:10px;font-weight:900;padding:5px 7px;border-radius:7px}.verdict.hit{color:var(--good);background:#123c2b}.verdict.miss{color:var(--bad);background:#461d26}
 .priceRow{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px}.priceRow div{background:#0a1017;border-radius:8px;padding:7px}.priceRow b{display:block;font-size:12px}.hitText{color:var(--good)}.missText{color:var(--bad)}.why{font-size:10px;margin-top:9px;line-height:1.35}
-.track{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:10px}.track div{padding:7px}.track b{font-size:18px}.notice{margin-top:10px;background:#2a2111;color:#ffd98b;border:1px solid #54411c;padding:9px;border-radius:9px;font-size:11px}.microMeta{margin-bottom:9px;background:#101720;border:1px solid #3a3150;border-radius:12px;padding:10px;color:#b9a9cf;font-size:11px;line-height:1.55}.microMeta b{color:#d7b8ff}
+.track{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:10px}.track div{padding:7px}.track b{font-size:18px}.historyWrap{margin-top:10px;overflow-x:auto}.history{width:100%;border-collapse:collapse;background:#0b1118;border:1px solid var(--line);font-size:10px}.history th,.history td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}.history th:first-child,.history td:first-child{text-align:left}.history th{color:var(--muted);text-transform:uppercase;font-size:8px}.historyNote{margin-top:5px;color:var(--muted);font-size:9px}.notice{margin-top:10px;background:#2a2111;color:#ffd98b;border:1px solid #54411c;padding:9px;border-radius:9px;font-size:11px}.microMeta{margin-bottom:9px;background:#101720;border:1px solid #3a3150;border-radius:12px;padding:10px;color:#b9a9cf;font-size:11px;line-height:1.55}.microMeta b{color:#d7b8ff}
 .footer{font-size:10px;color:var(--muted);text-align:center;line-height:1.5;margin-top:18px}
 @media(max-width:750px){.grid{grid-template-columns:1fr 1fr}.stats,.track{grid-template-columns:1fr 1fr}}@media(max-width:470px){.grid{grid-template-columns:1fr}}
 </style></head><body><div class="wrap">
